@@ -16,9 +16,8 @@
         keepBackup = false
 
 [color]
-    branch = auto
-    diff = auto
-    status = auto
+    ui = auto
+    interactive = auto
 
 [color "branch"]
     current = red reverse
@@ -80,3 +79,7 @@
 
     lasttag = describe --tags --abbrev=0
     record = ! sh -c '(git add -p -- $@ && git commit) || git reset' --
+
+
+[rerere]
+        enabled = true
