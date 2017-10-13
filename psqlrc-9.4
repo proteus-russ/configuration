@@ -1,4 +1,11 @@
-\set slowqueries 'SELECT   (total_time / 1000 / 60) as total_minutes,   (total_time/calls) as average_time_millis, (rows/calls) as avg_rows, query FROM pg_stat_statements ORDER BY 1 DESC '
+-- noinspection SqlNoDataSourceInspectionForFile
+\set dead_tuples 'select schemaname, relname, (n_dead_tup), (n_live_tup), ((n_dead_tup::decimal / (n_live_tup + n_dead_tup)::decimal) * 100) "%dead" from pg_stat_all_tables where n_dead_tup > 0 and n_live_tup > 0 and schemaname NOT ILIKE \'pg_%\' and n_live_tup > 9999 order by 3 DESC,5 DESC'
+
+\set buffer_hit 'SELECT sum(heap_blks_read) as heap_read, sum(heap_blks_hit)  as heap_hit, sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read)) as ratio FROM pg_statio_user_tables '
+
+\set index_hit 'SELECT relname, 100 * idx_scan / (seq_scan + idx_scan) percent_of_times_index_used, n_live_tup rows_in_table FROM pg_stat_user_tables WHERE seq_scan + idx_scan > 0 ORDER BY n_live_tup DESC'
+
+\set slowqueries 'SELECT   (total_time / 1000 / 60) as total_minutes, (total_time/calls) as average_time_millis, (rows/calls) as avg_rows, calls, query FROM pg_stat_statements ORDER BY 1 DESC '
 
 \set trashindexes '( select s.schemaname as sch, s.relname as rel, s.indexrelname as idx, s.idx_scan as scans, pg_size_pretty(pg_relation_size(s.relid)) as ts, pg_size_pretty(pg_relation_size(s.indexrelid)) as "is" from pg_stat_user_indexes s join pg_index i on i.indexrelid=s.indexrelid left join pg_constraint c on i.indrelid=c.conrelid and array_to_string(i.indkey, '' '') = array_to_string(c.conkey, '' '') where i.indisunique is false and pg_relation_size(s.relid) > 1000000 and s.idx_scan < 100000 and c.confrelid is null order by s.idx_scan asc, pg_relation_size(s.relid) desc )'
 
@@ -20,7 +27,7 @@
 
 \set dbsize 'SELECT datname, pg_size_pretty(pg_database_size(datname)) db_size FROM pg_database WHERE datname <> 'rdsadmin' ORDER BY db_size'
 
-\set uselesscol 'SELECT nspname, relname, attname, typname, (stanullfrac*100)::int AS null_percent, case when stadistinct >= 0 then stadistinct else abs(stadistinct)*reltuples end AS \"distinct\", case 1 when stakind1 then stavalues1 when stakind2 then stavalues2 end AS \"values\" FROM pg_class c JOIN pg_namespace ns ON (ns.oid=relnamespace) JOIN pg_attribute ON (c.oid=attrelid) JOIN pg_type t ON (t.oid=atttypid) JOIN pg_statistic ON (c.oid=starelid AND staattnum=attnum) WHERE nspname NOT LIKE E\'pg\\\\_%\' AND nspname != \'information_schema\' AND relkind=\'r\' AND NOT attisdropped AND attstattarget != 0 AND reltuples >= 100 AND stadistinct BETWEEN 0 AND 1 ORDER BY nspname, relname, attname'
+\set uselesscol 'SELECT nspname, relname, a.attname, typname, (stats.null_frac * 100) :: INT AS null_percent, CASE WHEN n_distinct >= 0 THEN n_distinct ELSE abs(n_distinct) * reltuples END AS "distinct", most_common_vals AS "values" FROM pg_class C JOIN pg_namespace ns ON (ns.oid=relnamespace) JOIN pg_attribute a ON ( C.oid=attrelid) JOIN pg_type t ON (t.oid=atttypid) JOIN pg_stats stats ON (tablename = relname AND stats.attname=a.attname) WHERE nspname NOT LIKE E\'pg\\\\_%\' AND nspname != \'information_schema\' AND relkind=\'r\' AND NOT attisdropped AND attstattarget != 0 AND reltuples >= 100 AND n_distinct BETWEEN 0 AND 1 ORDER BY nspname, relname, a.attname '
 
 \set settings 'select name, setting,unit,context from pg_settings'
 
@@ -57,10 +64,13 @@
 \echo '                 :activity       - all stat activity'
 \echo '                 :bloat        - see bloated tables/indexes'
 \echo '                 :blocked        - see blocked queries'
+\echo '                 :buf_hit        - see shared buffer hit ratio'
 \echo '                 :bufutilization - see shared buffer utilization by database'
 \echo '                 :conninfo       - see connection information'
 \echo '                 :dbsize         - database sizes'     
-\echo '                 :dbactivity         - database activity'     
+\echo '                 :dbactivity     - database activity'
+\echo '                 :dead_tuples    - see percentage of dead tuples for vacuum purposes'
+\echo '                 :index_hit      - see index hit ratio'
 \echo '                 :locks          - see locks'
 \echo '                 :menu           - see options'
 \echo '                 :missingindexes - see missing indexes'
