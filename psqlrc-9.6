@@ -1,0 +1,90 @@
+-- noinspection SqlNoDataSourceInspectionForFile
+\set dead_tuples 'select schemaname, relname, (n_dead_tup), (n_live_tup), ((n_dead_tup::decimal / (n_live_tup + n_dead_tup)::decimal) * 100) "%dead" from pg_stat_all_tables where n_dead_tup > 0 and n_live_tup > 0 and schemaname NOT ILIKE \'pg_%\' and n_live_tup > 9999 order by 3 DESC,5 DESC'
+
+\set buffer_hit 'SELECT sum(heap_blks_read) as heap_read, sum(heap_blks_hit)  as heap_hit, sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read)) as ratio FROM pg_statio_user_tables '
+
+\set index_hit 'SELECT relname, 100 * idx_scan / (seq_scan + idx_scan) percent_of_times_index_used, n_live_tup rows_in_table FROM pg_stat_user_tables WHERE seq_scan + idx_scan > 0 ORDER BY n_live_tup DESC'
+
+\set slowqueries 'SELECT   (total_time / 1000 / 60) as total_minutes, (total_time/calls) as average_time_millis, (rows/calls) as avg_rows, calls, query FROM pg_stat_statements ORDER BY 1 DESC '
+
+\set trashindexes '( select s.schemaname as sch, s.relname as rel, s.indexrelname as idx, s.idx_scan as scans, pg_size_pretty(pg_relation_size(s.relid)) as ts, pg_size_pretty(pg_relation_size(s.indexrelid)) as "is" from pg_stat_user_indexes s join pg_index i on i.indexrelid=s.indexrelid left join pg_constraint c on i.indrelid=c.conrelid and array_to_string(i.indkey, '' '') = array_to_string(c.conkey, '' '') where i.indisunique is false and pg_relation_size(s.relid) > 1000000 and s.idx_scan < 100000 and c.confrelid is null order by s.idx_scan asc, pg_relation_size(s.relid) desc )'
+
+\set missingindexes '( select src_table, dst_table, fk_name, pg_size_pretty(s_size) as s_size, pg_size_pretty(d_size) as d_size, d from ( select distinct on (1,2,3,4,5) textin(regclassout(c.conrelid)) as src_table, textin(regclassout(c.confrelid)) as dst_table, c.conname as fk_name, pg_relation_size(c.conrelid) as s_size, pg_relation_size(c.confrelid) as d_size, array_upper(di.indkey::int[], 1) + 1 - array_upper(c.conkey::int[], 1) as d from pg_constraint c left join pg_index di on di.indrelid = c.conrelid and array_to_string(di.indkey, '' '') ~ (''^'' || array_to_string(c.conkey, '' '') || ''( |$)'') join pg_stat_user_tables st on st.relid = c.conrelid where c.contype = ''f'' order by 1,2,3,4,5,6 asc) mfk where mfk.d is distinct from 0 and mfk.s_size > 1000000 order by mfk.s_size desc, mfk.d desc )'
+
+\set rtsize '(select table_schema, table_name, pg_relation_size( quote_ident( table_schema ) || \'.\' || quote_ident( table_name ) ) as size, pg_total_relation_size( quote_ident( table_schema ) || \'.\' || quote_ident( table_name ) ) as total_size from  information_schema.tables where table_type = \'BASE TABLE\' and table_schema not in (\'information_schema\', \'pg_catalog\') order by pg_relation_size( quote_ident( table_schema ) || \'.\' || quote_ident( table_name ) ) desc, table_schema, table_name)'
+
+\set tsize '(select table_schema, table_name, pg_size_pretty(size) as size, pg_size_pretty(total_size) as total_size from (:rtsize) x order by x.size desc, x.total_size desc, table_schema, table_name)'
+
+\set activity 'select * from pg_stat_activity'
+
+\set waits 'SELECT pg_stat_activity.pid, pg_stat_activity.query, pg_stat_activity.waiting, now() - pg_stat_activity.query_start  as "totaltime", pg_stat_activity.backend_start FROM pg_stat_activity WHERE pg_stat_activity.state NOT ILIKE \'%IDLE%\' AND pg_stat_activity.waiting = true'  
+  
+\set locks 'select l.pid,mode,query from pg_locks l,pg_stat_activity sa where granted=false and locktype=\'transactionid\' and l.pid=sa.pid order by pid,granted'
+
+\set blocked 'SELECT blocked_locks.pid AS blocked_pid, blocked_activity.usename AS blocked_user, blocking_locks.pid AS blocking_pid, blocking_activity.usename AS blocking_user, blocked_activity.query AS blocked_statement, blocking_activity.query AS current_statement_in_blocking_process FROM pg_catalog.pg_locks blocked_locks JOIN pg_catalog.pg_stat_activity blocked_activity  ON blocked_activity.pid = blocked_locks.pid JOIN pg_catalog.pg_locks  blocking_locks ON blocking_locks.locktype = blocked_locks.locktype JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid WHERE blocking_locks.pid != blocked_locks.pid AND NOT blocked_locks.GRANTED '
+
+\set dbactivity 'SELECT * FROM pg_stat_database'
+
+\set dbsize 'SELECT datname, pg_size_pretty(pg_database_size(datname)) db_size FROM pg_database WHERE datname <> \'rdsadmin\' ORDER BY db_size'
+
+\set uselesscol 'SELECT nspname, relname, a.attname, typname, (stats.null_frac * 100) :: INT AS null_percent, CASE WHEN n_distinct >= 0 THEN n_distinct ELSE abs(n_distinct) * reltuples END AS "distinct", most_common_vals AS "values" FROM pg_class C JOIN pg_namespace ns ON (ns.oid=relnamespace) JOIN pg_attribute a ON ( C.oid=attrelid) JOIN pg_type t ON (t.oid=atttypid) JOIN pg_stats stats ON (tablename = relname AND stats.attname=a.attname) WHERE nspname NOT LIKE E\'pg\\\\_%\' AND nspname != \'information_schema\' AND relkind=\'r\' AND NOT attisdropped AND attstattarget != 0 AND reltuples >= 100 AND n_distinct BETWEEN 0 AND 1 ORDER BY nspname, relname, a.attname '
+
+\set settings 'select name, setting,unit,context from pg_settings'
+
+\set conninfo 'select usename, count(*) from pg_stat_activity group by usename'
+
+\set queries 'SELECT now() - query_start as runtime, * FROM pg_stat_activity WHERE state NOT ILIKE \'%IDLE%\' ORDER BY runtime DESC'
+
+\set transactions 'SELECT now() - query_start as runtime, * FROM pg_stat_activity ORDER BY runtime DESC'
+
+\set bufutilization 'select datname, (blks_hit::numeric / (blks_hit + blks_read)::numeric)*100 as read_hit_percentage,* from pg_stat_database where blks_hit + blks_read > 0'
+
+\set bloat 'SELECT current_database(), schemaname, tablename, ROUND((CASE WHEN otta=0 THEN 0.0 ELSE sml.relpages::FLOAT/otta END)::NUMERIC,1) AS tbloat, CASE WHEN relpages < otta THEN 0 ELSE bs*(sml.relpages-otta)::BIGINT END AS wastedbytes, iname, ROUND((CASE WHEN iotta=0 OR ipages=0 THEN 0.0 ELSE ipages::FLOAT/iotta END)::NUMERIC,1) AS ibloat, CASE WHEN ipages < iotta THEN 0 ELSE bs*(ipages-iotta) END AS wastedibytes FROM ( SELECT schemaname, tablename, cc.reltuples, cc.relpages, bs, CEIL((cc.reltuples*((datahdr+ma- (CASE WHEN datahdr%ma=0 THEN ma ELSE datahdr%ma END))+nullhdr2+4))/(bs-20::FLOAT)) AS otta, COALESCE(c2.relname,\'?\') AS iname, COALESCE(c2.reltuples,0) AS ituples, COALESCE(c2.relpages,0) AS ipages, COALESCE(CEIL((c2.reltuples*(datahdr-12))/(bs-20::FLOAT)),0) AS iotta FROM ( SELECT ma,bs,schemaname,tablename, (datawidth+(hdr+ma-(CASE WHEN hdr%ma=0 THEN ma ELSE hdr%ma END)))::NUMERIC AS datahdr, (maxfracsum*(nullhdr+ma-(CASE WHEN nullhdr%ma=0 THEN ma ELSE nullhdr%ma END))) AS nullhdr2 FROM ( SELECT schemaname, tablename, hdr, ma, bs, SUM((1-null_frac)*avg_width) AS datawidth, MAX(null_frac) AS maxfracsum, hdr+( SELECT 1+COUNT(*)/8 FROM pg_stats s2 WHERE null_frac<>0 AND s2.schemaname = s.schemaname AND s2.tablename = s.tablename) AS nullhdr FROM pg_stats s, ( SELECT (SELECT current_setting(\'block_size\')::NUMERIC) AS bs, CASE WHEN SUBSTRING(v,12,3) IN (\'8.0\',\'8.1\',\'8.2\') THEN 27 ELSE 23 END AS hdr, CASE WHEN v ~ \'mingw32\' THEN 8 ELSE 4 END AS ma FROM (SELECT version() AS v) AS foo) AS constants GROUP BY 1,2,3,4,5) AS foo) AS rs JOIN pg_class cc ON cc.relname = rs.tablename JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname = rs.schemaname AND nn.nspname <> \'information_schema\' LEFT JOIN pg_index i ON indrelid = cc.oid LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid) AS sml ORDER BY wastedbytes DESC'
+
+\set extensions 'select * from pg_available_extensions'
+
+\set AUTOCOMMIT 'OFF'
+\x auto
+\set HISTCONTROL ignoredups
+\set COMP_KEYWORD_CASE upper
+\set HISTSIZE 2000
+\pset linestyle unicode
+\pset null ¤
+\pset format wrapped
+\timing
+\set PROMPT1 '\n%[%033[1;91m%]➤%[%033[2;37m%]%`\! date "+%F %I:%M %p %Z"`%[%033[0m%] %[%033[1;33m%]%/ %[%033[K%]%[%033[0m%]\n%[%033[1;33m%]%R%#%[%033[1;31m%]%x%[%033[0m%] '
+\set PROMPT2 '%[%033[1;33m%]%l %R%#%[%033[1;31m%]%x%[%033[0m%] '
+\encoding unicode
+
+\set menu '\\i /etc/sysconfig/pgsql/psqlrc'
+\unset QUIET
+\echo
+\echo 'Useful commands:'
+\echo '                 :activity       - all stat activity'
+\echo '                 :bloat        - see bloated tables/indexes'
+\echo '                 :blocked        - see blocked queries'
+\echo '                 :buffer_hit        - see shared buffer hit ratio'
+\echo '                 :bufutilization - see shared buffer utilization by database'
+\echo '                 :conninfo       - see connection information'
+\echo '                 :dbsize         - database sizes'     
+\echo '                 :dbactivity     - database activity'
+\echo '                 :dead_tuples    - see percentage of dead tuples for vacuum purposes'
+\echo '                 :extensions     - see available extensions'
+\echo '                 :index_hit      - see index hit ratio'
+\echo '                 :locks          - see locks'
+\echo '                 :menu           - see options'
+\echo '                 :missingindexes - see missing indexes'
+\echo '                 :queries        - see current queries'
+\echo '                 :transactions   - see current transactions'
+\echo '                 :trashindexes   - see indexes in need of cleaning'
+\echo '                 :tsize          - table sizes'
+\echo '                 :settings       - see current settings'
+\echo '                 :slowqueries    - see slow queries'
+\echo '                 :uselesscol     - see useless columns'
+\echo '                 :waits          - see IDLE queries'
+
+\echo
+\echo 'Example:'
+\echo ' :tsize LIMIT 5;'
+\echo
+\echo '\nPlease be aware that AUTOCOMMIT is OFF your changes must be committed using a COMMIT statement.\n'
