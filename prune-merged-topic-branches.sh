@@ -34,7 +34,7 @@ fi
 echo
 echo "NOTE: you may get an error if an upstream branch doesn't exist and we try to delete it. That's okay."
 echo
-sleep 2
+sleep 1
 for branch in $(mergedBranches); do
   echo
   # Find upstream - FIXME : find out if remote exists and just skip upstream delete if it doesn't
