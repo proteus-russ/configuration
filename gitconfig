@@ -1,20 +1,23 @@
 [user]
-        name = Russ Tennant
-        email = russ@venturetech.net
-
+	name = Russ Tennant
+	email = russ@proteus.co
 [core]
-        editor = /usr/bin/vim
+	autocrlf = input
 [diff]
         renamelimit = 2048
-        renames = copy
+	renames = copy
+[difftool "intellij"]
+	cmd = idea diff \"$LOCAL\" \"$REMOTE\"
 [push]
         default = simple
 [merge]
-        tool = kdiff3
+        tool = intellij
         renamelimit = 2048
 [mergetool]
         keepBackup = false
-
+[mergetool "intellij"]
+    cmd = idea merge \"$LOCAL\" \"$REMOTE\" \"$BASE\" \"$MERGED\"
+    trustExitCode = true
 [color]
     ui = auto
     interactive = auto
@@ -64,6 +67,7 @@
     sl = stash list
     sa = stash apply
     ss = stash save
+    sp = stash pop
 
     #rename branch tree to done-
    #done = "!f() { git branch | grep "$1" | cut -c 3- | grep -v done | xargs -I{} git branch -m {} done-{}; }; f"
@@ -85,4 +89,17 @@
         enabled = true
 
 [branch]
-        autosetuprebase = always
+	autosetuprebase = always
+
+[pager]
+	diff = diff-so-fancy | less --tabs=4 -RFX
+	show = diff-so-fancy | less --tabs=4 -RFX
+[gui]
+	recentrepo = /Users/russ/git/fork/capmc
+[init]
+	defaultBranch = main
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
