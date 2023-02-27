@@ -4,10 +4,13 @@ zstyle ':completion:*' max-errors 2
 zstyle ':completion:*' word true
 zstyle :compinstall filename '/Users/russ/.zshrc'
 
-# The following lines were added by compinstall
-autoload -Uz compinit
-compinit
-# End of lines added by compinstall
+if type brew &>/dev/null
+then
+  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+
+  autoload -Uz compinit
+  compinit
+fi
 
 # Lines configured by zsh-newuser-install
 HISTFILE=~/.histfile
