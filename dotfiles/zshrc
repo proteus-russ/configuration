@@ -1,3 +1,4 @@
+alias ql='qlmanage -p "$@"'
 
 zstyle ':completion:*' completer _complete _ignored _correct _approximate
 zstyle ':completion:*' max-errors 2
@@ -32,6 +33,8 @@ listening() {
         echo "Usage: listening [pattern]"
     fi
 }
+
+source ~/.iterm2_shell_integration.zsh
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
