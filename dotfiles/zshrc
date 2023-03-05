@@ -3,7 +3,8 @@
 if [[ -r ~/.aliasrc ]]; then
   . ~/.aliasrc
 fi
-fpath+=("$HOME/.local/functions")
+fpath=("$HOME/.local/functions" $fpath)
+autoload ${fpath[1]}/*(:t)
 setopt PROMPT_SUBST
 
 zstyle ':completion:*' completer _complete _ignored _correct _approximate
@@ -33,7 +34,7 @@ export HELPDIR=/usr/share/zsh/5.8.1/help
 unalias run-help
 autoload run-help
 
-autoload -Uz vcs_info estyle-cfc
+autoload -Uz vcs_info
 zstyle ':vcs_info:*' enable git
 # zstyle ':vcs_info:*' get-revision true
 zstyle -e ':vcs_info:git:*' \
