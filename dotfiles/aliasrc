@@ -1,3 +1,7 @@
 
+export LSCOLORS=ExFxBxDxCxegedabagacad
+alias ls='ls -GFh'
+
 alias ql='qlmanage -p "$@"'
+alias vcsi='vcs_info command; vcs_info_lastmsg'
 

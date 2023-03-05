@@ -1,5 +1,4 @@
-export LSCOLORS=ExFxBxDxCxegedabagacad
-alias ls='ls -GFh'
+# Login shell configuration
 
 export PATH="$HOME/.local/bin:$PATH";
 #export PATH="/opt/homebrew/opt/curl/bin:$PATH";
@@ -9,4 +8,3 @@ export PATH="/opt/homebrew/opt/node@18/bin:$PATH"
 export PATH="$PATH:/Users/russ/Library/Application Support/JetBrains/Toolbox/scripts"
 
 eval "$(/opt/homebrew/bin/brew shellenv)"
-

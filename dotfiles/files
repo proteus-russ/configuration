@@ -1,0 +1,6 @@
+aliasrc .aliasrc
+gitconfig .gitconfig
+psqlrc-13 .psqlrc
+zprofile .zprofile
+zshrc .zshrc
+ssh/config .ssh/config

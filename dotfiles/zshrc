@@ -1,4 +1,10 @@
-alias ql='qlmanage -p "$@"'
+# Interactive shell configuration
+
+if [[ -r ~/.aliasrc ]]; then
+  . ~/.aliasrc
+fi
+fpath+=("$HOME/.local/functions")
+setopt PROMPT_SUBST
 
 zstyle ':completion:*' completer _complete _ignored _correct _approximate
 zstyle ':completion:*' max-errors 2
@@ -7,16 +13,15 @@ zstyle :compinstall filename '/Users/russ/.zshrc'
 
 if type brew &>/dev/null
 then
-  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
-
+  fpath+=("$(brew --prefix)/share/zsh/site-functions")
   autoload -Uz compinit
   compinit
 fi
 
 # Lines configured by zsh-newuser-install
 HISTFILE=~/.histfile
-HISTSIZE=1000
-SAVEHIST=1000
+HISTSIZE=5000
+SAVEHIST=5000
 setopt autocd beep extendedglob nomatch notify
 bindkey -e
 # End of lines configured by zsh-newuser-install
@@ -24,19 +29,27 @@ bindkey -e
 autoload -U select-word-style
 select-word-style bash
 
-listening() {
-    if [ $# -eq 0 ]; then
-        sudo lsof -iTCP -sTCP:LISTEN -n -P
-    elif [ $# -eq 1 ]; then
-        sudo lsof -iTCP -sTCP:LISTEN -n -P | grep -i --color $1
-    else
-        echo "Usage: listening [pattern]"
-    fi
-}
+export HELPDIR=/usr/share/zsh/5.8.1/help
+unalias run-help
+autoload run-help
+
+autoload -Uz vcs_info estyle-cfc
+zstyle ':vcs_info:*' enable git
+# zstyle ':vcs_info:*' get-revision true
+zstyle -e ':vcs_info:git:*' \
+    check-for-changes 'estyle-cfc && reply=( true ) || reply=( false )'
+zstyle ':vcs_info:*' unstagedstr ' 📬'
+zstyle ':vcs_info:*' stagedstr ' 📫'
+zstyle ':vcs_info:git:*' formats ' %#' '%F{117}%b%f%u%c%m'
+zstyle ':vcs_info:git:*' nvcsformats ' %#'
+zstyle ':vcs_info:git:*' actionformats ' %F{161}[%a]%f %#'
+
+precmd() { vcs_info }
+PROMPT='%(?.%F{green}●.%F{red}●%f) %F{255}%3~%f${vcs_info_msg_0_} '
+RPROMPT='%(?..%F{red}%?%f) %F{245}${vcs_info_msg_1_}%f'
 
 source ~/.iterm2_shell_integration.zsh
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# Copy all configuration files from $HOME to here
+
+shopt -s dotglob
+
+read -p "Are you sure you want to copy files from $HOME to this repo? [yn]" -n 1 -r
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  exit 1
+fi
+cd "$(dirname "$0")" || exit
+echo -e "\n"
+
+script_dest="./scripts/"
+script_dir="$HOME/.local/bin/"
+cd "$(dirname "$0")" || exit
+while IFS= read -r script; do
+  script_src="${script_dir}${script}"
+  printf 'Copying %s to %s\n' "$script_src" "$script_dest"
+  cp "$script_src" "$script_dest"
+done < scripts/files
+echo
+
+function_dest="./functions/"
+function_dir="$HOME/.local/functions/"
+cd "$(dirname "$0")" || exit
+while IFS= read -r function; do
+  function_src="${function_dir}${function}"
+  printf 'Copying %s to %s\n' "$function_src" "$function_dest"
+  cp "$function_src" "$function_dest"
+done < scripts/files
+echo
+
+rc_src="$HOME/"
+file_info=
+file_dest=
+file_src=
+cd "$(dirname "$0")" || exit
+while IFS= read -r script; do
+  # We want word splitting
+  # shellcheck disable=SC2206
+  file_info=($script)
+  if [[ ${#file_info[@]} -ne 2 ]]; then
+    printf 'Invalid dotfile entry: %s' "$script"
+    continue
+  fi
+  file_src="${rc_src}${file_info[1]}"
+  file_dest="./dotfiles/${file_info[0]}"
+  printf 'Copying %s to %s\n' "$file_src" "$file_dest"
+  cp "$file_src" "$file_dest"
+done < dotfiles/files
+echo
