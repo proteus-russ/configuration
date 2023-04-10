@@ -2,8 +2,8 @@
 
 # Script to delete merged topic branches: story, task, bug, etc.
 
-# [Semi]Permanent Branches
-PERMANENT_BRANCHES='main.*|master.*|develop.*|sprint.*'
+# [Semi]Permanent Branches plus current branch
+PERMANENT_BRANCHES='main.*|master.*|develop.*|sprint.*|[*] .*'
 
 function mergedBranches() {
   git branch --merged | grep -Ev "$PERMANENT_BRANCHES"
@@ -47,7 +47,11 @@ for branch in $(mergedBranches); do
   fi
 
   if [ $interactive -eq 1 ]; then
-
+    shopt -s nocasematch
+    if [[ "${branch}" =~ .*[/](engage-[0-9]+) ]]; then
+      ticket="${BASH_REMATCH[1]}"
+      echo "Ticket => https://proteusco.atlassian.net/browse/${ticket}"
+    fi
     read -p "Prune branch: ${branch}${uprompt}? [yn] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then

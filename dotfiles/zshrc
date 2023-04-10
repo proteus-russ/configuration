@@ -36,7 +36,6 @@ autoload run-help
 
 autoload -Uz vcs_info
 zstyle ':vcs_info:*' enable git
-# zstyle ':vcs_info:*' get-revision true
 zstyle -e ':vcs_info:git:*' \
     check-for-changes 'estyle-cfc && reply=( true ) || reply=( false )'
 zstyle ':vcs_info:*' unstagedstr ' 📬'
@@ -46,8 +45,8 @@ zstyle ':vcs_info:git:*' nvcsformats ' %#'
 zstyle ':vcs_info:git:*' actionformats ' %F{161}[%a]%f %#'
 
 precmd() { vcs_info }
-PROMPT='%(?.%F{green}●.%F{red}●%f) %F{255}%3~%f${vcs_info_msg_0_} '
-RPROMPT='%(?..%F{red}%?%f) %F{245}${vcs_info_msg_1_}%f'
+PROMPT='%(?.%F{green}●.%F{red}●%f) %F{143}%3~%f${vcs_info_msg_0_} '
+RPROMPT='%(?..%F{red}%?%f) %F{178}${vcs_info_msg_1_}%f'
 
 source ~/.iterm2_shell_integration.zsh
 
