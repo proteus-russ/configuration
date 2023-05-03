@@ -31,7 +31,7 @@ autoload -U select-word-style
 select-word-style bash
 
 export HELPDIR=/usr/share/zsh/5.8.1/help
-unalias run-help
+# unalias run-help
 autoload run-help
 
 autoload -Uz vcs_info
@@ -48,8 +48,17 @@ precmd() { vcs_info }
 PROMPT='%(?.%F{green}●.%F{red}●%f) %F{143}%3~%f${vcs_info_msg_0_} '
 RPROMPT='%(?..%F{red}%?%f) %F{178}${vcs_info_msg_1_}%f'
 
+export PSYS_AWS_UTILS_HOME="$HOME/git/main/aws-utils"
+path+=("$PSYS_AWS_UTILS_HOME/bin")
+
 source ~/.iterm2_shell_integration.zsh
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+if [[ -d "$HOME/.local/env" ]]; then
+    for env in $(echo $HOME/.local/env/*.env); do
+        . $env
+    done
+fi

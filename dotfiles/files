@@ -4,3 +4,4 @@ psqlrc-13 .psqlrc
 zprofile .zprofile
 zshrc .zshrc
 ssh/config .ssh/config
+aws-utils-user.inc.zsh .aws-utils-user.inc.zsh
