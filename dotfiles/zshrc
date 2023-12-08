@@ -30,7 +30,7 @@ bindkey -e
 autoload -U select-word-style
 select-word-style bash
 
-export HELPDIR=/usr/share/zsh/5.8.1/help
+export HELPDIR=/usr/share/zsh/5.9/help
 # unalias run-help
 autoload run-help
 
