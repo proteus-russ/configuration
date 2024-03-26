@@ -31,4 +31,6 @@ Host *.pfapp.co
 Host obi-wan.i2rd.com
   ControlMaster no
 
-
+# SSH over Session Manager
+host i-0fb1ac89067ccbd66
+  ProxyCommand sh -c "aws --profile proteus-server-nonprod ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
