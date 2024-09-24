@@ -18,7 +18,7 @@ This will install the `sz` and `rz` binaries in `/usr/local/bin/` or `/opt/homeb
 your mac:~ user$ brew install lrzsz
 ```
 
-Grab the scripts from [here](https://github.com/proteus-russ/configuration/iterm), and save them in `/usr/local/bin/`.
+Grab the scripts from [here](https://github.com/proteus-russ/configuration/tree/master/iterm), and save them in `/usr/local/bin/`.
 
 
 Next, we'll add a Triggers to your iTerm 2 profile that will trigger on the signature of the `rz` and `sz` commands. 
@@ -69,4 +69,6 @@ Follow me on Twitter: [@mmastrac](https://twitter.com/mmastrac)
 
 ### Notes
 
-The mmastrac iterm repo no longer exists. This is a copy of the original blog post and repo contents.
+The mmastrac iterm repo no longer exists. 
+This is a copy of the original blog post and repo contents
+with updates for changes over the past 13 years.
