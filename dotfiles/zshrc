@@ -3,6 +3,7 @@
 if [[ -r ~/.aliasrc ]]; then
   . ~/.aliasrc
 fi
+
 fpath=("$HOME/.local/functions" $fpath)
 autoload ${fpath[1]}/*(:t)
 setopt PROMPT_SUBST
@@ -23,6 +24,16 @@ fi
 HISTFILE=~/.histfile
 HISTSIZE=5000
 SAVEHIST=5000
+setopt EXTENDED_HISTORY      # Write the history file in the ':start:elapsed;command' format.
+setopt INC_APPEND_HISTORY    # Write to the history file immediately, not when the shell exits.
+setopt SHARE_HISTORY         # Share history between all sessions.
+setopt HIST_IGNORE_DUPS      # Do not record an event that was just recorded again.
+setopt HIST_IGNORE_ALL_DUPS  # Delete an old recorded event if a new event is a duplicate.
+setopt HIST_IGNORE_SPACE     # Do not record an event starting with a space..
+setopt HIST_VERIFY           # Do not execute immediately upon history expansion.
+setopt APPEND_HISTORY        # append to history file (Default)
+setopt HIST_NO_STORE         # Don't store history commands
+
 setopt autocd beep extendedglob nomatch notify
 bindkey -e
 # End of lines configured by zsh-newuser-install
@@ -31,8 +42,9 @@ autoload -U select-word-style
 select-word-style bash
 
 export HELPDIR=/usr/share/zsh/5.9/help
-# unalias run-help
-autoload run-help
+unalias run-help
+autoload -Uz run-help
+alias help=run-help
 
 autoload -Uz vcs_info
 zstyle ':vcs_info:*' enable git
