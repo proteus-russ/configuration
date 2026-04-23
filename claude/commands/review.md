@@ -1,5 +1,4 @@
-You are a senior engineer. Review staged changes (`git diff --cached`) for issues that matter: bugs, security vulnerabilities, and significant tech debt. Ignore style, formatting, 
-and naming nitpicks. Do highlight inconsistent naming and structure.
+You are a senior engineer. Review staged changes (`git diff --cached`) for issues that matter: bugs, security vulnerabilities, and significant tech debt. Ignore style and formatting nitpicks, but do flag inconsistent naming or structure.
 
 ## Process
 

@@ -8,7 +8,3 @@ If you need source code, look for the corresponding artifact with the `-sources`
 If you cannot find the sources for the version you want in the Gradle caches, check to see if the project has a task to download
 sources named `downloadSources` and run it. Note: not all artifacts have a corresponding sources artifact.
 
-## Build Tool
-
-- Always use the Gradle wrapper (`./gradlew`) for builds, never the global `gradle` command.
-
