@@ -15,7 +15,7 @@ Personal dotfile and shell-configuration repository. Files live here in canonica
 All three invocations share [lib/sync.sh](lib/sync.sh), which contains the copy loop, parent-dir creation, failure tracking, and the final `N copied [, M failed]` summary. 
 A non-zero exit means at least one file failed to copy.
 
-The script reads three manifest files to decide what to sync. **Editing a file here is not enough — it also has to be listed in the corresponding manifest, or the sync scripts will skip it.** 
+The script reads four manifest files to decide what to sync. **Editing a file here is not enough — it also has to be listed in the corresponding manifest, or the sync scripts will skip it.** 
 Blank lines and `#`-prefixed comments in manifests are ignored.
 
 | Manifest | Source dir | Destination | Format |
@@ -23,6 +23,7 @@ Blank lines and `#`-prefixed comments in manifests are ignored.
 | [dotfiles/files](dotfiles/files) | `dotfiles/` | `$HOME/` | two columns: `<repo-name> <home-path>` (e.g. `zshrc .zshrc`, `psqlrc-13 .psqlrc`) |
 | [scripts/files](scripts/files) | `scripts/` | `$HOME/.local/bin/` | one filename per line |
 | [functions/files](functions/files) | `functions/` | `$HOME/.local/functions/` | one filename per line |
+| [claude/files](claude/files) | `claude/` | `$HOME/.claude/` | one path per line; nested paths allowed (e.g. `rules/java-version.md`) |
 
 
 ## Directory roles
@@ -32,9 +33,12 @@ Blank lines and `#`-prefixed comments in manifests are ignored.
 - `functions/` — zsh autoload functions installed to `~/.local/functions/` (sourced by `zshrc`).
 - `iterm/` — iTerm2 ZModem coprocess scripts plus setup docs ([iterm/README.md](iterm/README.md)). These are **not** installed by `copy-to-home`; they are copied manually into `/usr/local/bin` per the README.
 - `postgresql/` — reference copies of `pg_hba.conf` / `postgresql.conf` for the local Postgres server. Not auto-installed; edit the live files under the Postgres data directory and mirror changes here.
+- `claude/` — global Claude Code config (`CLAUDE.md`, `rules/`, `commands/`, and future `skills/`) installed into `~/.claude/`. 
+  Symlinks and personal/runtime state (`settings.json`, `sessions/`, `plans/`, `plugins/`, etc.) are intentionally not tracked. Only files listed in `claude/files` sync.
 
 ## Conventions when adding files
 
 - Adding a new dotfile: drop it in `dotfiles/`, then append a `<repo-name> <home-path>` line to `dotfiles/files`. The repo name has no leading dot; the home path does.
 - Versioned configs (like the `psqlrc-*` series) are kept side-by-side so the active one can be swapped by editing the mapping in `dotfiles/files` rather than renaming files.
 - New scripts must be `chmod +x` and listed in `scripts/files`; same pattern for `functions/files`.
+- New Claude rule/command/skill: drop it under `claude/rules/`, `claude/commands/`, or `claude/skills/`, then append its path (relative to `claude/`) to `claude/files`.

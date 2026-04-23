@@ -51,6 +51,12 @@ skipped.
                           "ssh/config .ssh/config"
                           "psqlrc-13 .psqlrc"   (version swap via manifest)
 
+  claude/files      one name per line
+                    claude/<name>    <->  $HOME/.claude/<name>
+                    e.g.  "CLAUDE.md"
+                          "rules/java-version.md"
+                          "commands/review.md"
+
 Missing parent directories under the destination are created as needed.
 Copy failures are reported to stderr; the final summary is
 "N copied[, M skipped][, K failed]" and the script exits non-zero if
@@ -122,5 +128,6 @@ fi
 sync_list   scripts/files    scripts    "$HOME/.local/bin"        "$direction"
 sync_list   functions/files  functions  "$HOME/.local/functions"  "$direction"
 sync_mapped dotfiles/files   dotfiles   "$HOME"                   "$direction"
+sync_list   claude/files     claude     "$HOME/.claude"           "$direction"
 
 sync_summary
