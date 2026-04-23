@@ -8,3 +8,6 @@ ec2hosts[redir-dev-01]="proteus-server-prod";
 ec2hosts[sca-release-01]="proteus-server-prod";
 ec2hosts[ci-release-01]="proteus-server-prod";
 ec2hosts[repo-release-01]="proteus-server-prod";
+ec2hosts[reviewr2-release-01]="reviewr-server-prod";
+ec2hosts[reviewr2-test-01]="reviewr-server-nonprod";
+ec2hosts[reviewr2-qa-01]="reviewr-server-nonprod";

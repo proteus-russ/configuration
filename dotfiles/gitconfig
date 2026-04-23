@@ -28,10 +28,13 @@
     remote = green
 
 [color "diff"]
-    meta = green bold
-    frag = magenta bold
-    old = red bold
-    new = blue bold
+	meta = 11
+	frag = magenta bold
+	old = red bold
+	new = green bold
+	func = 146 bold
+	commit = yellow bold
+	whitespace = red reverse
 
 [color "status"]
     added = yellow
@@ -103,3 +106,8 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
