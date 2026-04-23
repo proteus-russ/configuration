@@ -14,15 +14,25 @@ usage() {
 sync-home — one-way sync between this repo and $HOME.
 
 Usage:
-  sync-home to-home       install repo files into $HOME
-  sync-home from-home     pull $HOME files back into this repo
-  sync-home -h|--help     show this message
+  sync-home [flags] to-home       install repo files into $HOME
+  sync-home [flags] from-home     pull $HOME files back into this repo
+  sync-home -h|--help             show this message
+
+Flags (accepted before or after the direction):
+  -i, --interactive   review each changed file; show a diff and prompt per file
+  -n, --dry-run       print what would be copied; never write
+
+Short flags may be combined (e.g. -in, -ni).
 
 Symlink invocations (direction inferred from $0):
   copy-to-home            same as: sync-home to-home
   copy-from-home          same as: sync-home from-home
 
-Both directions prompt for confirmation before copying.
+Without -i, both directions prompt once at the top before copying. With -i,
+the per-file prompt supersedes the top-level confirmation.
+
+Files that already match between source and destination are skipped silently
+and reported in the summary (e.g. "3 copied, 12 skipped").
 
 What gets synced is driven by three manifests. A file is only touched
 if it appears in its manifest; files present on disk but absent from
@@ -43,21 +53,47 @@ skipped.
 
 Missing parent directories under the destination are created as needed.
 Copy failures are reported to stderr; the final summary is
-"N copied" on success or "N copied, M failed" on any failure, and the
-script exits non-zero if anything failed.
+"N copied[, M skipped][, K failed]" and the script exits non-zero if
+anything failed.
 
 Shared copy logic lives in lib/sync.sh.
 EOF
 }
 
-case "${1:-}" in
-    -h|--help) usage; exit 0 ;;
-esac
+opt_interactive=0
+opt_dry_run=0
+positional=()
+
+parse_short_flags() {
+    local chars="$1" c
+    local i
+    for (( i=0; i<${#chars}; i++ )); do
+        c="${chars:$i:1}"
+        case "$c" in
+            i) opt_interactive=1 ;;
+            n) opt_dry_run=1 ;;
+            h) usage; exit 0 ;;
+            *) printf 'Unknown flag: -%s\n\n' "$c" >&2; usage >&2; exit 2 ;;
+        esac
+    done
+}
+
+while (( $# )); do
+    case "$1" in
+        -h|--help)        usage; exit 0 ;;
+        -i|--interactive) opt_interactive=1 ;;
+        -n|--dry-run)     opt_dry_run=1 ;;
+        --)               shift; positional+=("$@"); break ;;
+        -*)               parse_short_flags "${1#-}" ;;
+        *)                positional+=("$1") ;;
+    esac
+    shift
+done
 
 case "$(basename "$0")" in
     copy-to-home)   direction=to-home ;;
     copy-from-home) direction=from-home ;;
-    *)              direction="${1:-}" ;;
+    *)              direction="${positional[0]:-}" ;;
 esac
 
 case "$direction" in
@@ -72,10 +108,15 @@ cd "$(dirname "$0")"
 # shellcheck source=lib/sync.sh
 source lib/sync.sh
 
-if [[ $direction == to-home ]]; then
-    confirm "Copy files from this repo to $HOME?" || exit 1
-else
-    confirm "Copy files from $HOME to this repo?" || exit 1
+SYNC_INTERACTIVE="$opt_interactive"
+SYNC_DRY_RUN="$opt_dry_run"
+
+if (( ! SYNC_INTERACTIVE )) && (( ! SYNC_DRY_RUN )); then
+    if [[ $direction == to-home ]]; then
+        confirm "Copy files from this repo to $HOME?" || exit 1
+    else
+        confirm "Copy files from $HOME to this repo?" || exit 1
+    fi
 fi
 
 sync_list   scripts/files    scripts    "$HOME/.local/bin"        "$direction"
