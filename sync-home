@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# One-way Sync configuration files between this repo and $HOME.
+#
+#   sync-home to-home     # install repo files into $HOME
+#   sync-home from-home   # pull $HOME files back into repo
+#
+# Also invokable as the symlinks `copy-to-home` / `copy-from-home`,
+# in which case the direction is inferred from the invoked name.
+
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+sync-home — one-way sync between this repo and $HOME.
+
+Usage:
+  sync-home to-home       install repo files into $HOME
+  sync-home from-home     pull $HOME files back into this repo
+  sync-home -h|--help     show this message
+
+Symlink invocations (direction inferred from $0):
+  copy-to-home            same as: sync-home to-home
+  copy-from-home          same as: sync-home from-home
+
+Both directions prompt for confirmation before copying.
+
+What gets synced is driven by three manifests. A file is only touched
+if it appears in its manifest; files present on disk but absent from
+the manifest are ignored. Blank lines and lines starting with '#' are
+skipped.
+
+  scripts/files     one name per line
+                    scripts/<name>   <->  $HOME/.local/bin/<name>
+
+  functions/files   one name per line
+                    functions/<name> <->  $HOME/.local/functions/<name>
+
+  dotfiles/files    two columns: <repo-name> <path-relative-to-$HOME>
+                    dotfiles/<repo-name>  <->  $HOME/<path>
+                    e.g.  "zshrc .zshrc"
+                          "ssh/config .ssh/config"
+                          "psqlrc-13 .psqlrc"   (version swap via manifest)
+
+Missing parent directories under the destination are created as needed.
+Copy failures are reported to stderr; the final summary is
+"N copied" on success or "N copied, M failed" on any failure, and the
+script exits non-zero if anything failed.
+
+Shared copy logic lives in lib/sync.sh.
+EOF
+}
+
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+esac
+
+case "$(basename "$0")" in
+    copy-to-home)   direction=to-home ;;
+    copy-from-home) direction=from-home ;;
+    *)              direction="${1:-}" ;;
+esac
+
+case "$direction" in
+    to-home|from-home) ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
+
+cd "$(dirname "$0")"
+# shellcheck source=lib/sync.sh
+source lib/sync.sh
+
+if [[ $direction == to-home ]]; then
+    confirm "Copy files from this repo to $HOME?" || exit 1
+else
+    confirm "Copy files from $HOME to this repo?" || exit 1
+fi
+
+sync_list   scripts/files    scripts    "$HOME/.local/bin"        "$direction"
+sync_list   functions/files  functions  "$HOME/.local/functions"  "$direction"
+sync_mapped dotfiles/files   dotfiles   "$HOME"                   "$direction"
+
+sync_summary
