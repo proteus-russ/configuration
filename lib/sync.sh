@@ -122,8 +122,20 @@ _copy_one() {
     fi
 }
 
+# Recursively copies all non-symlink regular files under src_dir into dest_dir,
+# preserving relative paths. Symlinks are silently skipped.
+_sync_dir() {
+    local src_dir="$1" dest_dir="$2" filepath rel_path
+    src_dir="${src_dir%/}"
+    dest_dir="${dest_dir%/}"
+    while IFS= read -r -d '' filepath; do
+        rel_path="${filepath#"$src_dir"/}"
+        _copy_one "$filepath" "$dest_dir/$rel_path"
+    done < <(find "$src_dir" ! -type l ! -type d -print0 2>/dev/null | sort -z)
+}
+
 # usage: sync_list <manifest> <repo_dir> <home_dir> <direction>
-# manifest lines: one filename per line
+# manifest lines: one filename per line; trailing slash treats entry as a directory
 # direction: to-home | from-home
 sync_list() {
     local manifest="$1" repo_dir="$2" home_dir="$3" direction="$4"
@@ -132,9 +144,17 @@ sync_list() {
         (( SYNC_QUIT )) && break
         [[ -z $name || $name == \#* ]] && continue
         if [[ $direction == to-home ]]; then
-            _copy_one "$repo_dir/$name" "$home_dir/$name"
+            if [[ $name == */ ]]; then
+                _sync_dir "$repo_dir/$name" "$home_dir/$name"
+            else
+                _copy_one "$repo_dir/$name" "$home_dir/$name"
+            fi
         else
-            _copy_one "$home_dir/$name" "$repo_dir/$name"
+            if [[ $name == */ ]]; then
+                _sync_dir "$home_dir/$name" "$repo_dir/$name"
+            else
+                _copy_one "$home_dir/$name" "$repo_dir/$name"
+            fi
         fi
     done 3< "$manifest"
     echo
