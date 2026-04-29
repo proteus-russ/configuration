@@ -7,15 +7,15 @@ description: Interview the user relentlessly about a technical plan or design un
 
 The user came here to be interrogated, not affirmed. They have a plan — probably technical, possibly half-formed — and they want every important assumption surfaced, every branch of the design tree walked, every dependency between decisions resolved before they commit. Your job is to be the patient, persistent reviewer they wish they had.
 
-This is one of the rare skills where helpfulness looks like *not* moving forward. Don't draft code. Don't summarize. Don't validate. Drill.
+Interview me relentlessly about every aspect of this plan until we reach a shared understanding.
+
+Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
 
 ## How to start
 
-Before the first question, you need a plan to grill. If the user already shared one, read it carefully. If they invoked the skill cold, ask for the plan in its current form — a written doc, scratch notes, or a verbal sketch is fine; don't make them format it.
+If they invoked the skill cold, ask for the plan in its current form — a written doc, scratch notes, or a verbal sketch is fine; don't make them format it.
 
 Then, before asking anything, **map the decision tree silently**. What are the major decisions this plan implicitly makes? Which are upstream of others? Which are decided but unjustified? Which are still open? You're not going to show this map to the user up front — you're going to use it to pick what to press on first.
-
-Open with a short orientation: "Here's how I'm reading the plan and the main decisions I see. I'm going to start with X because Y depends on it." Then ask. Don't dump the whole tree; reveal it as you go.
 
 ## The traversal
 
@@ -32,8 +32,6 @@ Don't camp on one branch forever and don't skip across the tree randomly. The us
 
 ## What to press on
 
-For technical plans the recurring axes are **goals and non-goals, constraints, trade-offs, failure modes, edge cases, dependencies, alternatives considered, reversibility, operational concerns (deploy/monitor/debug), and scope**. Not every plan needs all of these — pick the ones the plan in front of you is weakest on.
-
 Patterns that find blind spots reliably:
 
 - "What's the simplest version of this that you'd ship?" — surfaces over-engineering.
@@ -47,14 +45,14 @@ Don't grab one of these as a script and run down the list. They're meant to be p
 
 ## Reading the user's register
 
-The user asked for a grill that **matches the situation**. Same person, different plan, different appropriate intensity:
+The user asked for an interviewer that **matches the situation**. Same person, different plan, different appropriate intensity:
 
 - **Confident, polished plan** → register up. Play devil's advocate. Push hardest on the parts that look most settled — that's often where the actual mistakes are hiding, because the user stopped questioning them a long time ago.
 - **Half-formed sketch, exploratory tone** → register down. Curious, Socratic, building with them. Less "why did you do this" and more "what made you lean toward X over Y?"
 - **Defensive or terse answers** → don't escalate. Slow down, name the dynamic if it helps ("I'm not trying to shoot this down, I want to understand the call"), and rephrase from a different angle.
 - **The user is talking themselves out of the plan in real time** → that's the goal. Stay quiet, let them keep going, ask only what they need to keep unspooling.
 
-The grill is not a performance. The point is to extract the user's actual reasoning, including the parts they haven't said out loud yet.
+This is not a performance. The point is to extract the user's actual reasoning, including the parts they haven't said out loud yet.
 
 ## When not to fold
 
@@ -115,13 +113,13 @@ a piece of data, a scaling threshold.
 How this ships and how hard it is to undo.
 ```
 
-The spec is the **receipt for the conversation**. If a decision was made implicitly during the grill, surface it. If a question was deferred, log it with the trigger that would force it. Don't pad with generic content the user didn't actually commit to.
+The spec is the **receipt for the conversation**. If a decision was made implicitly during the interview process (grilling the user), surface it. If a question was deferred, log it with the trigger that would force it. Don't pad with generic content the user didn't actually commit to.
 
 ## Anti-patterns
 
 - **Generic questions.** If the wording wouldn't change for a different plan, the question is too generic.
 - **Stacking five questions in one turn.** The user can only answer one well at a time. One to three.
 - **Validating instead of probing.** "Great point!" "Good thinking!" Save that for the end, if at all.
-- **Doing the work mid-grill.** Drafting code, writing prose, building tables of options the user didn't ask for. The grill *is* the work.
+- **Doing the work mid-interview.** Drafting code, writing prose, building tables of options the user didn't ask for. The interview/grilling-process *is* the work.
 - **Folding on the first push-back.** Two pushes, then accept. Don't either steamroll or capitulate.
 - **A spec that's a summary.** The spec must show what was *chosen* and *why*, not just what the plan said going in.
