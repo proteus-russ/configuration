@@ -17,7 +17,7 @@ If they invoked the skill cold, ask for the plan in its current form — a writt
 
 Then, before asking anything, **map the decision tree silently**. What are the major decisions this plan implicitly makes? Which are upstream of others? Which are decided but unjustified? Which are still open? You're not going to show this map to the user up front — you're going to use it to pick what to press on first.
 
-## The traversal
+## The decision-tree traversal
 
 Walk the tree in **dependency order**, not in the order the plan happens to be written. A decision that constrains other decisions gets resolved first. A decision that's downstream of an unresolved choice has to wait — otherwise you're asking the user to commit to something whose constraints aren't known yet.
 
