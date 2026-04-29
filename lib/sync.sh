@@ -128,10 +128,10 @@ _sync_dir() {
     local src_dir="$1" dest_dir="$2" filepath rel_path
     src_dir="${src_dir%/}"
     dest_dir="${dest_dir%/}"
-    while IFS= read -r -d '' filepath; do
+    while IFS= read -r -d '' -u 4 filepath; do
         rel_path="${filepath#"$src_dir"/}"
         _copy_one "$filepath" "$dest_dir/$rel_path"
-    done < <(find "$src_dir" ! -type l ! -type d -print0 2>/dev/null | sort -z)
+    done 4< <(find "$src_dir" ! -type l ! -type d -print0 2>/dev/null | sort -z)
 }
 
 # usage: sync_list <manifest> <repo_dir> <home_dir> <direction>
