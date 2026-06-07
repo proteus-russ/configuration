@@ -1,6 +1,10 @@
 CLAUDE.md
-rules/java-version.md
-rules/project-dependencies.md
-rules/gradle.md
+RTK.md
+rules/jvm.md
 commands/review.md
+skills/aws-ssm-access/
+skills/caveman/
+skills/cms-page-analytics/
 skills/grill-me/
+skills/grill-with-docs/
+skills/handoff/
