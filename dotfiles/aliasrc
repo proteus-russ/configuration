@@ -1,6 +1,10 @@
 
 export LSCOLORS=ExFxBxDxCxegedabagacad
 alias ls='ls -GFh --color=auto'
+alias ll='eza -lh --icons --git --hyperlink'
+alias llt='eza -lh --icons --git --hyperlink --total-size'
+alias la='eza -lha --icons --git --hyperlink'
+alias lat='eza -lha --icons --git --hyperlink --total-size'
 
 # Mac Quicklook
 alias ql='qlmanage -p "$@"'
