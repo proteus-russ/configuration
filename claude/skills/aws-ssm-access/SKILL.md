@@ -1,14 +1,13 @@
 ---
 name: aws-ssm-access
 description: >-
-  Connect to EC2 instances and move files over AWS Systems Manager (SSM) using
-  the Proteus/VentureTech `aws-utils` tools (`pssh`, `pscp_in`, `pscp_out`).
-  Use when the user wants to ssh into a server, run a remote command on EC2,
-  copy a file to/from an EC2 instance, port-forward to a remote database, or
-  pull/copy production (or QA) data into a local/dev database. Also triggers on
-  the literal tool names `pssh` / `pscp_in` / `pscp_out`, "session manager",
-  "ssh over ssm", or "LEAPP". Cross-project — these are machine-wide conventions,
-  not specific to any one repo.
+  EC2 access over AWS Systems Manager (SSM) via the Proteus/VentureTech
+  `aws-utils` tools (`pssh`, `pscp_in`, `pscp_out`). Use for any ssh,
+  remote command, file copy, or port-forward involving an EC2 instance,
+  including pulling production/QA data into a local or dev database.
+  Also triggers on the literal names `pssh`/`pscp_in`/`pscp_out`,
+  "session manager", "ssh over ssm", or "LEAPP". Machine-wide
+  conventions, not repo-specific.
 ---
 
 # AWS SSM access (aws-utils)

@@ -1,15 +1,13 @@
 ---
 name: cms-page-analytics
 description: >-
-  Proteus Framework CMS page model + request analytics. Use this whenever a question touches how
-  people interact with sites that use Proteus Framework — site traffic, page views, "which pages or UIs are users
-  hitting", "what part of the page are they interacting with", request volume, error rates, response
-  timing, authenticated vs anonymous usage, top components — or whenever the `requeststatistic` table
-  comes up. ALSO use it for CMS structural questions: how `PageElement`, `Page`, `PageTemplate`,
-  `Layout`, `Box`, `ContentElement`, `BeanBoxList`, or `PageElementPath` work and how they map to the
-  database tables. Trigger even when the user doesn't name the table or class — e.g. "what are the most
-  popular pages last month", "which submission forms get the most use", "show me 500s by page". This is
-  Proteus-Framework-wide knowledge, not specific to one project.
+  Proteus Framework CMS page model and request analytics. Use for any question about how users
+  interact with Proteus Framework sites — traffic, page views, request volume, error rates,
+  response timing, authenticated vs anonymous usage, top pages or components — or anything
+  involving the `requeststatistic` table. Also use for CMS structure: how `Page`, `PageElement`,
+  `PageTemplate`, `Layout`, `Box`, `ContentElement`, `BeanBoxList`, and `PageElementPath` work
+  and map to database tables. Trigger even when no table or class is named, e.g. "most popular
+  pages last month" or "show me 500s by page". Framework-wide knowledge, not project-specific.
 ---
 
 # CMS page model + request analytics
