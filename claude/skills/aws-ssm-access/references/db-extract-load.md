@@ -3,8 +3,7 @@
 Pull a **scoped slice** of a table from a remote (prod/QA) Postgres DB and load
 it into a local dev DB, using `pssh` / `pscp_out` / `pscp_in`.
 
-This recipe is derived from a real, hand-corrected workflow:
-`/Users/russ/git/fork/reviewr/scripts/fetch-rs-civisbee.sh` — an event-scoped
+This recipe is derived from a real, hand-corrected workflow — an event-scoped
 slice of `requeststatistic` pulled from `reviewr2-release-01` (prod) into the
 `reviewr2-dev` local DB, bounded by `requesttime BETWEEN '2025-08-01' AND
 '2026-03-15'`. The original was Claude-authored and had the bugs called out at
@@ -39,7 +38,10 @@ echo "$(wc -l < list.csv) keys to fetch"
 # 2. Ship the list up — pscp_out takes THREE args: <host> <local> <remote>.
 pscp_out "$EC2_HOST" list.csv /tmp/list.csv
 
-# 3. REMOTE — load the list into a temp table, join, dump the slice to CSV.
+# 3. REMOTE — load the list into a temp table, join, dump the slice to a
+#    COMPRESSED CSV. Pipe COPY ... TO STDOUT straight through zstd (or gzip) so
+#    the uncompressed CSV never lands on the remote's /tmp — for wide/large
+#    slices this is the difference between fitting in /tmp and filling it.
 #    Pass START/END into the remote shell as env vars so the heredoc can use them.
 pssh "$EC2_HOST" "START='$START' END='$END' bash" <<'REMOTE'
 set -euo pipefail
@@ -47,18 +49,20 @@ psql -X <<SQL
 CREATE TEMP TABLE _wanted (some_key varchar PRIMARY KEY);
 \copy _wanted FROM '/tmp/list.csv' CSV
 ANALYZE _wanted;
-\copy (SELECT t.* FROM target_table t JOIN _wanted w USING (some_key) WHERE t.ts_col BETWEEN '${START}' AND '${END}') TO '/tmp/out.csv' WITH (FORMAT csv, HEADER true)
+\copy (SELECT t.* FROM target_table t JOIN _wanted w USING (some_key) WHERE t.ts_col BETWEEN '${START}' AND '${END}') TO PROGRAM 'zstd -q -o /tmp/out.csv.zst' WITH (FORMAT csv, HEADER true)
 SQL
-wc -l /tmp/out.csv
+ls -lh /tmp/out.csv.zst
 REMOTE
 
-# 4. Pull the CSV back — pscp_in downloads into CWD. NO redirect.
-pscp_in "$EC2_HOST" /tmp/out.csv          # -> ./out.csv
+# 4. Pull the compressed CSV back — pscp_in downloads into CWD. NO redirect.
+pscp_in "$EC2_HOST" /tmp/out.csv.zst       # -> ./out.csv.zst
 
-# 5. LOCAL — load via a staging temp table so existing PKs don't collide.
+# 5. LOCAL — decompress on the fly and load via a staging temp table so existing
+#    PKs don't collide. COPY ... FROM PROGRAM keeps the uncompressed CSV off
+#    local disk too.
 psql -X "$LOCAL_DB" <<SQL
 CREATE TEMP TABLE _staging (LIKE target_table INCLUDING ALL);
-\copy _staging FROM 'out.csv' WITH (FORMAT csv, HEADER true)
+\copy _staging FROM PROGRAM 'zstd -dc out.csv.zst' WITH (FORMAT csv, HEADER true)
 INSERT INTO target_table
 SELECT * FROM _staging
 ON CONFLICT (target_pk) DO NOTHING;
@@ -66,14 +70,23 @@ SELECT count(*) AS staged FROM _staging;
 SQL
 
 # 6. Clean up the remote temp files you created.
-pssh "$EC2_HOST" 'rm -f /tmp/list.csv /tmp/out.csv'
+pssh "$EC2_HOST" 'rm -f /tmp/list.csv /tmp/out.csv.zst'
 echo "Done."
 ```
 
 Notes on the steps:
 - **Step 1 is optional.** If you can express the whole filter as a `WHERE` on the
   target table (e.g. just a date window), skip the key-list round-trip and do the
-  `\copy (SELECT ... WHERE ts BETWEEN ...) TO '/tmp/out.csv'` directly in step 3.
+  `\copy (SELECT ... WHERE ts BETWEEN ...) TO PROGRAM 'zstd ...'` directly in step 3.
+- **Compress on the way out** (`TO PROGRAM 'zstd ...'` / `FROM PROGRAM 'zstd -dc ...'`).
+  Piping `COPY` through `zstd`/`gzip` means the bulky uncompressed CSV never touches
+  the remote `/tmp` (or your local CWD) — only the compressed file is written, which
+  matters when remote `/tmp` is small relative to the slice. It also shrinks the SSM
+  transfer. Prefer `zstd` (faster, smaller); fall back to `gzip` if `zstd` isn't on
+  the box: `TO PROGRAM 'gzip > /tmp/out.csv.gz'` and `FROM PROGRAM 'gzip -dc out.csv.gz'`.
+  `TO PROGRAM`/`FROM PROGRAM` run the command **server-side relative to the `\copy`
+  client** (here, the remote shell for the dump and your laptop for the load), so the
+  compressor must exist wherever that `psql` runs.
 - **`\copy` must be a single logical line** — it is a psql meta-command and does
   not support multi-line SQL. `COPY (...) TO STDOUT` (server-side) can span lines
   but writes to the server; `\copy` runs client-side and is what you want for
@@ -99,11 +112,11 @@ Notes on the steps:
 
 ## Alternatives
 
-- **Whole small table:** dump on the box, then `pscp_in`:
+- **Whole small table:** dump on the box (compressed), then `pscp_in`:
   ```bash
-  pssh "$EC2_HOST" "pg_dump -t public.<table> --data-only --column-inserts <db> > /tmp/t.sql"
-  pscp_in "$EC2_HOST" /tmp/t.sql
-  psql -X "$LOCAL_DB" -f t.sql
+  pssh "$EC2_HOST" "pg_dump -t public.<table> --data-only --column-inserts <db> | zstd -q -o /tmp/t.sql.zst"
+  pscp_in "$EC2_HOST" /tmp/t.sql.zst
+  zstd -dc t.sql.zst | psql -X "$LOCAL_DB"
   ```
 - **Port-forward (no temp file on the box):** tunnel to the remote DB and run
   `pg_dump`/`psql` locally against the forwarded port:
