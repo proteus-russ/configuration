@@ -88,11 +88,14 @@ The host arg is resolved to a LEAPP profile two ways:
 
 Known reviewr hosts (from the user's live config):
 
-| Host                 | Environment | LEAPP profile           |
-|----------------------|-------------|-------------------------|
-| `reviewr2-release-01`| **PROD**    | `reviewr-server-prod`   |
-| `reviewr2-qa-01`     | QA/nonprod  | `reviewr-server-nonprod`|
-| `reviewr2-test-01`   | test/nonprod| `reviewr-server-nonprod`|
+| Host                  | Environment | LEAPP profile            |
+|-----------------------|-------------|--------------------------|
+| `reviewr2-release-01` | **PROD**    | `reviewr-server-prod`    |
+| `reviewr2-qa-01`      | QA/nonprod  | `reviewr-server-nonprod` |
+| `reviewr2-test-01`    | test/nonprod| `reviewr-server-nonprod` |
+| `engage-release-01`   | **PROD**    | `engage-server-prod`     |
+| `engage-qa-01`        | QA/nonprod  | `engage-server-nonprod`  |
+| `engage-test-01`      | test/nonprod| `engage-server-nonprod`  |
 
 ## Conventions & gotchas
 
@@ -119,5 +122,6 @@ before writing such a script.
   (`reviewr2-qa-01` / `reviewr2-test-01`) whenever the data allows.
 - Always **scope the extract on the server side** (`WHERE ... BETWEEN`,
   `LIMIT`, key joins) — never pull a whole table and filter locally.
-- **Confirm before writing to the local dev DB** and before any remote write.
+- **Confirm before writing to the local dev DB**
+- **You MUST never attempt to write to a remote DB** - it will always fail.
 - Clean up remote `/tmp` files you create.
