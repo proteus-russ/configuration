@@ -138,7 +138,7 @@ A request URL can target a sub-tree of a page, not just the whole page. Full for
 - **/partial** — return only what `${PageElementPath}` targets, not the whole page. Use this to fetch
   one portion of a page.
 - **/content-type/...** — force a response content-type (bypasses content negotiation); the type is
-  percent-encoded (e.g. `application%2Fatom%2Bxml`).
+  optionally percent-encoded (e.g. `application%2Fatom%2Bxml`).
 - **normal path** — the ordinary page path (e.g. `cms/article_demo/ac_box`), i.e. the
   `pageelementpath.path` prefix described above.
 - **FdxbQVI...** — the page element path: the prefix `FdxbQVI` (a configurable default) followed by a
