@@ -20,7 +20,7 @@ SSH-over-SSM: `ssh`/`scp` tunnel through `aws ssm start-session` (document
 
 Source repo: <https://github.com/VentureTech/aws-utils>
 
-## Prerequisites (already satisfied on this machine)
+## Prerequisites
 
 - `pssh`, `pscp_in`, `pscp_out`, `start-leapp-session`, `add-leapp-session`
   are **always on `$PATH`** — call them by bare name. **Never** source anything
