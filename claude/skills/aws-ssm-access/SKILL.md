@@ -86,7 +86,7 @@ The host arg is resolved to a LEAPP profile two ways:
    - `fo` → `<name>-server-fo`
    - anything else → `<name>-server-nonprod`
 
-Known reviewr hosts (from the user's live config):
+Host examples:
 
 | Host                  | Environment | LEAPP profile            |
 |-----------------------|-------------|--------------------------|
