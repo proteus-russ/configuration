@@ -126,6 +126,37 @@ site URL path to a `Page` or `ContentElement`.
   (e.g. `s2/showcase`); the actual requested URL appends wildcard path info (mirrored in
   `requeststatistic.pathinfo`).
 
+### CMS URL path format
+
+A request URL can target a sub-tree of a page, not just the whole page. Full format
+([VTDEV/CMS URL Path Format](https://proteusco.atlassian.net/wiki/spaces/VTDEV/pages/41091168/CMS+URL+Path+Format)):
+
+```
+[/partial][/content-type/${ContentType}][normal path][FdxbQVI${PageElementPath}]
+```
+
+- **/partial** — return only what `${PageElementPath}` targets, not the whole page. Use this to fetch
+  one portion of a page.
+- **/content-type/...** — force a response content-type (bypasses content negotiation); the type is
+  percent-encoded (e.g. `application%2Fatom%2Bxml`).
+- **normal path** — the ordinary page path (e.g. `cms/article_demo/ac_box`), i.e. the
+  `pageelementpath.path` prefix described above.
+- **FdxbQVI...** — the page element path: the prefix `FdxbQVI` (a configurable default) followed by a
+  comma-separated list of element ids using the same `pathId` discriminators as the rest of this doc —
+  `pg<id>` Page, `bx<id>` Box, `cb<id>` ContentElement. E.g. `FdxbQVIpg1191,bx728,bx730,cb3012`
+  walks Page 1191 → Box 728 → Box 730 → ContentElement 3012. Ancestors are **optional**: the list can
+  name just the target element, and the **normal path can be omitted entirely** — so
+  `FdxbQVIcb1542` alone targets ContentElement 1542. When present, request parameters are scoped to
+  that sub-tree. Practically, the path is only optional when targeting a ContentElement. For example,
+  if you target a Box, it can live on multiple pages and have different content on each page.
+
+Examples:
+
+- Fetch a single content element directly (handy in analytics — given a `contentelement_id` from
+  `requeststatistic`, render just that element): `https://my.reviewr.com/partial/FdxbQVIcb1542`
+- Fetch one content element as an Atom feed, with the full path and a forced content-type:
+  `http://host/partial/content-type/application%2Fatom%2Bxml/cms/article_demo/ac_box/FdxbQVIpg1191,bx728,bx730,cb3012?FeedType=atom_1_0`
+
 ## How template → page content inheritance works {#inheritance}
 
 1. A `Page` has one `PageTemplate`; the template has one `Layout`; the layout defines the ordered
