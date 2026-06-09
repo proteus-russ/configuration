@@ -130,4 +130,5 @@ Notes on the steps:
 - Treat prod (`reviewr2-release-01`) as **read-only**; prefer `reviewr2-qa-01` /
   `reviewr2-test-01` when the data allows.
 - **Confirm with the user before writing to the local dev DB.**
+- **You MUST never attempt to write to a remote DB** - it will always fail.
 - Always clean up remote `/tmp` artifacts (step 6).
