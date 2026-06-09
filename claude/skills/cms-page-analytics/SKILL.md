@@ -65,6 +65,21 @@ structural context you reach through the beanboxlist joins, not something record
    production, growing constantly, archived periodically) — an unbounded scan is expensive, and old
    rows may have been archived out anyway. Every analytic query should carry a `requesttime` filter.
 
+## PII/PHI gate — confirm before pulling production data
+
+`requeststatistic` rows describe real user activity (`userprincipal`, user
+agent, the exact `pagepath`), and joins back into the CMS model can surface
+more. **Before running any query that reads production data — or whose results
+include personal data — you MUST stop and ask the user to explicitly confirm it
+contains no PII or PHI that is meant to be scrubbed before leaving production.**
+Get that confirmation **every time**; never assume.
+
+This applies to every product. **Engage** is the sharp example: you must use its
+**sanitized snapshots** and treat Engage production data as off-limits — do
+**not** pull it ever - this must not be overridden. Engage flags PHI-protected
+records via the `phisafeguards` column in `app.company`, which is exactly the
+kind of data that must not leave production unscrubbed.
+
 ## Where to go next
 
 | You want to… | Go to |

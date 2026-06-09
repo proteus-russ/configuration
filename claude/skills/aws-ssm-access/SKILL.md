@@ -111,13 +111,26 @@ Host examples:
 ## Pulling partial DB data from prod/QA into local dev
 
 This is the headline use case (extract a date-/key-scoped slice on the remote
-DB, transfer the CSV, load it locally). The full corrected, worked PostgreSQL
+DB, transfer the CSV, load it locally). **Before you extract anything from
+production, satisfy the PII/PHI gate in _Safety rules_ below — for Engage that
+means pulling from a sanitized snapshot, not prod.** The full corrected, worked PostgreSQL
 recipe — staging-table load, `\copy` rules, and the common mistakes to avoid —
 is in **[references/db-extract-load.md](references/db-extract-load.md)**. Read it
 before writing such a script.
 
 ## Safety rules
 
+- **PII/PHI gate — you MUST prompt before any production data leaves prod.**
+  Before extracting, downloading, or copying **any** data off a production
+  instance or DB, stop and ask the user to explicitly confirm the data
+  contains no PII or PHI that is meant to be scrubbed before leaving
+  production. Get that confirmation **every time** — never proceed on
+  assumption. This applies to every product, not just the examples below.
+  - **Engage:** use the **sanitized database snapshots** instead of production. Treat
+    Engage production data as off-limits for extraction — do **not** pull it
+    ever the user is not allowed to override. Engage flags PHI-protected records
+    via the `phisafeguards` column in `app.company`; that safeguard is the
+    reason this data must not leave prod unscrubbed.
 - Treat **prod (`reviewr2-release-01`) as read-only**. Prefer QA/nonprod
   (`reviewr2-qa-01` / `reviewr2-test-01`) whenever the data allows.
 - Always **scope the extract on the server side** (`WHERE ... BETWEEN`,
