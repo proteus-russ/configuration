@@ -2,7 +2,7 @@
 name: cms-page-analytics
 description: >-
   Proteus Framework CMS page model + request analytics. Use this whenever a question touches how
-  people interact with a PF/reviewr site — site traffic, page views, "which pages or UIs are users
+  people interact with sites that use Proteus Framework — site traffic, page views, "which pages or UIs are users
   hitting", "what part of the page are they interacting with", request volume, error rates, response
   timing, authenticated vs anonymous usage, top components — or whenever the `requeststatistic` table
   comes up. ALSO use it for CMS structural questions: how `PageElement`, `Page`, `PageTemplate`,

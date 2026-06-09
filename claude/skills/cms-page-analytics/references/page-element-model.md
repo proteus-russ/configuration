@@ -85,20 +85,20 @@ discriminator.
 - Join tables: `contentelement_labels`, `contentelement_ndelists`, `contentelement_published`
   (published model data per locale).
 
-Common `disc_type` values (counts from a reviewr dev sample — relative popularity, not exact):
+Common `disc_type` values:
 
-| disc_type | ~count | what it is |
-| --- | --- | --- |
-| `com.i2rd.cms.bean.ScriptingBean` | 1400+ | scripted/templated content |
-| `com.i2rd.cms.bean.TextBean` | 1000+ | rich text |
-| `com.i2rd.cms.bean.CompositeBean` | 650+ | container for other content elements |
-| `com.i2rd.cms.component.miwt.MIWTContentElement` | 260+ | MIWT/Kotlin UI component (the interactive app UIs) |
-| `com.i2rd.cms.bean.CollapsibleBean` | 130+ | collapsible section |
-| `com.i2rd.cms.bean.MenuBean` | 78 | navigation menu |
-| `com.i2rd.freemarker.component.FreeMarkerComponent` | 47 | FreeMarker template |
-| `com.i2rd.cms.bean.HTMLContentElement` | 46 | raw HTML |
-| `com.i2rd.cms.bean.TabBean` | 44 | tabs |
-| `com.i2rd.cms.bean.{LoginBean,LogoutBean}` | ~80 | auth widgets |
+| disc_type | what it is |
+| --- | --- |
+| `com.i2rd.cms.bean.ScriptingBean` | scripted/templated content |
+| `com.i2rd.cms.bean.TextBean` | rich text |
+| `com.i2rd.cms.bean.CompositeBean` | container for other content elements |
+| `com.i2rd.cms.component.miwt.MIWTContentElement` | MIWT/Kotlin UI component (the interactive app UIs) |
+| `com.i2rd.cms.bean.CollapsibleBean` | collapsible section |
+| `com.i2rd.cms.bean.MenuBean` | navigation menu |
+| `com.i2rd.freemarker.component.FreeMarkerComponent` | FreeMarker template |
+| `com.i2rd.cms.bean.HTMLContentElement` | raw HTML |
+| `com.i2rd.cms.bean.TabBean` | tabs |
+| `com.i2rd.cms.bean.{LoginBean,LogoutBean}` | auth widgets |
 
 `MIWTContentElement` is where the interactive Kotlin app UIs live; its `componentidentifier` carries the
 backing class, e.g. `.../MIWTContentElement:/co.proteus.reviewr.kotlin.ui.submission.NewSubmissionSignupComponent`.
