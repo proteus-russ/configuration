@@ -24,6 +24,19 @@ Source repo: <https://github.com/VentureTech/aws-utils>
 - `pssh`, `pscp_in`, `pscp_out`, `start-leapp-session`, `add-leapp-session`
   are **always on `$PATH`** — call them by bare name. **Never** source anything
   or reference `$PSYS_AWS_UTILS_HOME` in a script you generate.
+- **Run the tools through an interactive zsh** — their environment
+  (`PSYS_AWS_UTILS_HOME`, etc.) is set up in the interactive rc files, so a
+  plain non-interactive `Bash` invocation fails with
+  `ERROR: aws-utils is not configured (no PSYS_AWS_UTILS_HOME)`. Wrap every
+  call:
+
+  ```bash
+  zsh -ic "pssh reviewr2-qa-01 \"hostname\""
+  # heredoc form: pipe the remote script into pssh's stdin
+  zsh -ic "pssh reviewr2-qa-01 bash" <<'REMOTE'
+  psql -X -At -c "select now()"
+  REMOTE
+  ```
 - `leapp`, `aws`, and `session-manager-plugin` are installed.
 - LEAPP sessions auto-start: each tool runs `aws sts get-caller-identity` and
   calls `leapp session start <profile>` if creds are stale. No manual step needed.
@@ -116,6 +129,12 @@ means pulling from a sanitized snapshot, not prod.** The full corrected, worked 
 recipe — staging-table load, `\copy` rules, and the common mistakes to avoid —
 is in **[references/db-extract-load.md](references/db-extract-load.md)**. Read it
 before writing such a script.
+
+When querying users/auth data in any Proteus Framework database (who is this
+principal, what groups/roles, usernames), use the **`pf-users-schema`** skill
+first — notably: there is no `principal` table (principals live in `role` with
+`type='principal'`), and usernames are on `credentials.role_fk`, not
+`credentials.userid`.
 
 ## Safety rules
 
