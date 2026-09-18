@@ -8,27 +8,19 @@ description: >-
   Also triggers on the literal names `pssh`/`pscp_in`/`pscp_out`,
   "session manager", "ssh over ssm", or "LEAPP". Machine-wide
   conventions, not repo-specific.
+disable-model-invocation: true
 ---
 
 # AWS SSM access (aws-utils)
 
-These EC2 instances have **no public SSH and no bastion**. All access is
-SSH-over-SSM: `ssh`/`scp` tunnel through `aws ssm start-session` (document
-`AWS-StartSSHSession`). The `aws-utils` wrapper tools handle credential
-(LEAPP) startup, Name-tag→instance-id resolution, and the SSM ProxyCommand.
+EC2 instances: **no public SSH, no bastion**. All access = SSH-over-SSM: `ssh`/`scp` tunnel through `aws ssm start-session` (document `AWS-StartSSHSession`). `aws-utils` wrappers handle LEAPP creds, Name-tag→instance-id resolution, SSM ProxyCommand.
 
 Source repo: <https://github.com/VentureTech/aws-utils>
 
 ## Prerequisites
 
-- `pssh`, `pscp_in`, `pscp_out`, `start-leapp-session`, `add-leapp-session`
-  are **always on `$PATH`** — call them by bare name. **Never** source anything
-  or reference `$PSYS_AWS_UTILS_HOME` in a script you generate.
-- **Run the tools through an interactive zsh** — their environment
-  (`PSYS_AWS_UTILS_HOME`, etc.) is set up in the interactive rc files, so a
-  plain non-interactive `Bash` invocation fails with
-  `ERROR: aws-utils is not configured (no PSYS_AWS_UTILS_HOME)`. Wrap every
-  call:
+- `pssh`, `pscp_in`, `pscp_out`, `start-leapp-session`, `add-leapp-session` always on `$PATH` — bare names. **Never** source anything or reference `$PSYS_AWS_UTILS_HOME` in generated scripts.
+- **Run tools through interactive zsh** — env (`PSYS_AWS_UTILS_HOME`, etc.) set in interactive rc files. Plain non-interactive `Bash` fails: `ERROR: aws-utils is not configured (no PSYS_AWS_UTILS_HOME)`. Wrap every call:
 
   ```bash
   zsh -ic "pssh reviewr2-qa-01 \"hostname\""
@@ -37,9 +29,8 @@ Source repo: <https://github.com/VentureTech/aws-utils>
   psql -X -At -c "select now()"
   REMOTE
   ```
-- `leapp`, `aws`, and `session-manager-plugin` are installed.
-- LEAPP sessions auto-start: each tool runs `aws sts get-caller-identity` and
-  calls `leapp session start <profile>` if creds are stale. No manual step needed.
+- `leapp`, `aws`, `session-manager-plugin` installed.
+- LEAPP sessions auto-start: each tool runs `aws sts get-caller-identity`, calls `leapp session start <profile>` if creds stale. No manual step.
 
 ## The three commands
 
@@ -49,10 +40,10 @@ pscp_in  <host> <remote-path>            # downloads into CWD
 pscp_out <host> <local-path> <remote-path>
 ```
 
-`<host>` is the EC2 **Name tag** (e.g. `reviewr2-qa-01`), not an instance-id.
+`<host>` = EC2 **Name tag** (e.g. `reviewr2-qa-01`), not instance-id.
 
-### `pssh` — ssh / run remote command / port-forward
-Everything after `<host>` is passed straight to `ssh`. So you can:
+### `pssh` — ssh / remote command / port-forward
+Everything after `<host>` passes straight to `ssh`:
 ```bash
 pssh reviewr2-qa-01                          # interactive shell
 pssh reviewr2-qa-01 "hostname && whoami"     # one-off remote command
@@ -63,42 +54,37 @@ psql -X -c "select now()"
 REMOTE
 ```
 
-### `pscp_in` — copy FROM remote into current directory
+### `pscp_in` — copy FROM remote into CWD
 ```bash
 pscp_in reviewr2-qa-01 /tmp/out.csv          # lands ./out.csv in CWD
 ```
-**It downloads the file into CWD. Do NOT redirect its stdout** — `pscp_in host
-/tmp/x.csv > x.csv` is wrong (produces an empty file). There is no `host:path`
-form.
+Downloads into CWD. **Do NOT redirect stdout** — `pscp_in host /tmp/x.csv > x.csv` wrong (empty file). No `host:path` form.
 
-### `pscp_out` — copy local file TO remote (THREE separate args)
+### `pscp_out` — copy local TO remote (THREE separate args)
 ```bash
 pscp_out reviewr2-qa-01 ./list.csv /tmp/list.csv
 ```
-**The host is its own argument.** It is NOT scp-style — do not write
-`pscp_out ./list.csv "host:/tmp/list.csv"`.
+**Host = own argument.** NOT scp-style — never `pscp_out ./list.csv "host:/tmp/list.csv"`.
 
 ### Reconstructing ad-hoc ssh/scp
-If you ever need raw `ssh`/`scp` (e.g. rsync), the wrappers use:
+Raw `ssh`/`scp` (e.g. rsync) — wrappers use:
 ```bash
 ProxyCommand="sh -c \"aws --profile <profile> ssm start-session --target %h \
   --document-name AWS-StartSSHSession --parameters 'portNumber=%p'\""
 ssh -S none -o "ProxyCommand=$ProxyCommand" -oStrictHostKeyChecking=no <instance-id> ...
 ```
-where `<instance-id>` comes from
+`<instance-id>` from
 `aws ec2 describe-instances --filters "Name=tag:Name,Values=<name-with -→*-*>" \
   --query 'Reservations[*].Instances[*].InstanceId' --output text`.
 
 ## Instance & profile resolution
 
-The host arg is resolved to a LEAPP profile two ways:
-1. **Exact match** in the `ec2hosts` map (`~/.aws-utils-user.inc.zsh`).
+Host arg -> LEAPP profile two ways:
+1. **Exact match** in `ec2hosts` map (`~/.aws-utils-user.inc.zsh`).
 2. Else **pattern** `NAME-CONTEXT-NN`:
    - `release` → `<name>-server-prod`
    - `fo` → `<name>-server-fo`
-   - anything else → `<name>-server-nonprod`
-
-Host examples:
+   - else → `<name>-server-nonprod`
 
 | Host                  | Environment | LEAPP profile            |
 |-----------------------|-------------|--------------------------|
@@ -111,30 +97,16 @@ Host examples:
 
 ## Conventions & gotchas
 
-- `-S none`: no shared control socket — the SSM tunnel does not persist between
-  invocations (intentional, since port-forwards over a reused connection misbehave).
-- `-oStrictHostKeyChecking=no`: SSM transport makes MITM negligible; no
-  known_hosts churn.
-- A **stopped** instance is auto-started, followed by a hardcoded `sleep 20` for
-  the SSM agent — expect a one-time ~25s delay on a cold instance.
-- Name tags may contain whitespace, so the tools wildcard `-`→`*-*` internally.
-  Use the dashed alias (`reviewr2-qa-01`), not the raw tag.
+- `-S none`: no shared control socket — SSM tunnel not persistent between invocations (intentional; port-forwards over reused conn misbehave).
+- `-oStrictHostKeyChecking=no`: SSM transport -> MITM negligible; no known_hosts churn.
+- Stopped instance auto-started + hardcoded `sleep 20` for SSM agent -> one-time ~25s delay on cold instance.
+- Name tags may contain whitespace; tools wildcard `-`→`*-*` internally. Use dashed alias (`reviewr2-qa-01`), not raw tag.
 
 ## Pulling partial DB data from prod/QA into local dev
 
-This is the headline use case (extract a date-/key-scoped slice on the remote
-DB, transfer the CSV, load it locally). **Before you extract anything from
-production, satisfy the PII/PHI gate in _Safety rules_ below — for Engage that
-means pulling from a sanitized snapshot, not prod.** The full corrected, worked PostgreSQL
-recipe — staging-table load, `\copy` rules, and the common mistakes to avoid —
-is in **[references/db-extract-load.md](references/db-extract-load.md)**. Read it
-before writing such a script.
+Headline use case (extract date-/key-scoped slice on remote DB, transfer CSV, load locally). **Before extracting anything from production, satisfy PII/PHI gate in _Safety rules_ — for Engage, pull from sanitized snapshot, not prod.** Full corrected PostgreSQL recipe — staging-table load, `\copy` rules, common mistakes — in **[references/db-extract-load.md](references/db-extract-load.md)**. Read it before writing such a script.
 
-When querying users/auth data in any Proteus Framework database (who is this
-principal, what groups/roles, usernames), use the **`pf-users-schema`** skill
-first — notably: there is no `principal` table (principals live in `role` with
-`type='principal'`), and usernames are on `credentials.role_fk`, not
-`credentials.userid`.
+Users/auth queries in any Proteus Framework DB (who is principal, groups/roles, usernames): use **`pf-users-schema`** skill first — no `principal` table (principals live in `role` with `type='principal'`); usernames on `credentials.role_fk`, not `credentials.userid`.
 
 ## Safety rules
 
@@ -143,16 +115,14 @@ first — notably: there is no `principal` table (principals live in `role` with
   instance or DB, stop and ask the user to explicitly confirm the data
   contains no PII or PHI that is meant to be scrubbed before leaving
   production. Get that confirmation **every time** — never proceed on
-  assumption. This applies to every product, not just the examples below.
-  - **Engage:** use the **sanitized database snapshots** instead of production. Treat
-    Engage production data as off-limits for extraction — do **not** pull it
-    ever the user is not allowed to override. Engage flags PHI-protected records
-    via the `phisafeguards` column in `app.company`; that safeguard is the
-    reason this data must not leave prod unscrubbed.
-- Treat **prod (`reviewr2-release-01`) as read-only**. Prefer QA/nonprod
-  (`reviewr2-qa-01` / `reviewr2-test-01`) whenever the data allows.
-- Always **scope the extract on the server side** (`WHERE ... BETWEEN`,
-  `LIMIT`, key joins) — never pull a whole table and filter locally.
-- **Confirm before writing to the local dev DB**
-- **You MUST never attempt to write to a remote DB** - it will always fail.
+  assumption. Applies to every product, not just the examples below.
+  - **Engage:** use the **sanitized database snapshots** instead of production.
+    Engage production data is off-limits for extraction — do **not** pull it,
+    ever; the user is not allowed to override. Engage flags PHI-protected
+    records via the `phisafeguards` column in `app.company`; that safeguard is
+    why this data must not leave prod unscrubbed.
+- Treat **prod (`reviewr2-release-01`) as read-only**. Prefer QA/nonprod (`reviewr2-qa-01` / `reviewr2-test-01`) when data allows.
+- Always **scope extract server-side** (`WHERE ... BETWEEN`, `LIMIT`, key joins) — never pull whole table, filter locally.
+- **Confirm before writing to local dev DB.**
+- **You MUST never attempt to write to a remote DB** — always fails.
 - Clean up remote `/tmp` files you create.

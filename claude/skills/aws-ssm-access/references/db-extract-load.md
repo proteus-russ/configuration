@@ -1,18 +1,10 @@
 # DB extract → transfer → load (PostgreSQL, over SSM)
 
-Pull a **scoped slice** of a table from a remote (prod/QA) Postgres DB and load
-it into a local dev DB, using `pssh` / `pscp_out` / `pscp_in`.
-
-This recipe is derived from a real, hand-corrected workflow — an event-scoped
-slice of `requeststatistic` pulled from `reviewr2-release-01` (prod) into the
-`reviewr2-dev` local DB, bounded by `requesttime BETWEEN '2025-08-01' AND
-'2026-03-15'`. The original was Claude-authored and had the bugs called out at
-the bottom; the version below is the **corrected** canonical pattern.
+Pull **scoped slice** of table from remote (prod/QA) Postgres into local dev DB via `pssh` / `pscp_out` / `pscp_in`. Derived from real hand-corrected workflow (event-scoped `requeststatistic` slice, `reviewr2-release-01` -> `reviewr2-dev`, bounded `requesttime BETWEEN '2025-08-01' AND '2026-03-15'`). Version below = **corrected** canonical pattern.
 
 ## Canonical 6-step pattern
 
-Assume `psql` connects to the local dev DB by service/db name (`reviewr2-dev`
-below) and the remote box already has `psql` + DB access in scope.
+Assume `psql` connects to local dev DB by service/db name (`reviewr2-dev`); remote box has `psql` + DB access.
 
 ```bash
 #!/usr/bin/env bash
@@ -74,52 +66,31 @@ pssh "$EC2_HOST" 'rm -f /tmp/list.csv /tmp/out.csv.zst'
 echo "Done."
 ```
 
-Notes on the steps:
-- **Step 1 is optional.** If you can express the whole filter as a `WHERE` on the
-  target table (e.g. just a date window), skip the key-list round-trip and do the
-  `\copy (SELECT ... WHERE ts BETWEEN ...) TO PROGRAM 'zstd ...'` directly in step 3.
-- **Compress on the way out** (`TO PROGRAM 'zstd ...'` / `FROM PROGRAM 'zstd -dc ...'`).
-  Piping `COPY` through `zstd`/`gzip` means the bulky uncompressed CSV never touches
-  the remote `/tmp` (or your local CWD) — only the compressed file is written, which
-  matters when remote `/tmp` is small relative to the slice. It also shrinks the SSM
-  transfer. Prefer `zstd` (faster, smaller); fall back to `gzip` if `zstd` isn't on
-  the box: `TO PROGRAM 'gzip > /tmp/out.csv.gz'` and `FROM PROGRAM 'gzip -dc out.csv.gz'`.
-  `TO PROGRAM`/`FROM PROGRAM` run the command **server-side relative to the `\copy`
-  client** (here, the remote shell for the dump and your laptop for the load), so the
-  compressor must exist wherever that `psql` runs.
-- **`\copy` must be a single logical line** — it is a psql meta-command and does
-  not support multi-line SQL. `COPY (...) TO STDOUT` (server-side) can span lines
-  but writes to the server; `\copy` runs client-side and is what you want for
-  reading/writing local files.
-- **Identity/sequence columns:** after loading rows with explicit PKs into local
-  dev, bump the sequence if you'll insert more locally:
+Step notes:
+- **Step 1 optional.** Whole filter expressible as `WHERE` on target table (e.g. date window) -> skip key-list round-trip; do `\copy (SELECT ... WHERE ts BETWEEN ...) TO PROGRAM 'zstd ...'` directly in step 3.
+- **Compress on way out** (`TO PROGRAM 'zstd ...'` / `FROM PROGRAM 'zstd -dc ...'`). Uncompressed CSV never touches remote `/tmp` (or local CWD) — only compressed file written; matters when remote `/tmp` small vs slice. Also shrinks SSM transfer. Prefer `zstd`; fall back `gzip`: `TO PROGRAM 'gzip > /tmp/out.csv.gz'` / `FROM PROGRAM 'gzip -dc out.csv.gz'`. `TO PROGRAM`/`FROM PROGRAM` run **relative to the `\copy` client** (remote shell for dump, laptop for load) — compressor must exist where that `psql` runs.
+- **`\copy` = single logical line** — psql meta-command, no multi-line SQL. `COPY (...) TO STDOUT` (server-side) can span lines but writes to server; `\copy` runs client-side — what you want for local files.
+- **Identity/sequence columns:** after loading explicit PKs, bump sequence if inserting more locally:
   `SELECT setval(pg_get_serial_sequence('target_table','id'), max(id)) FROM target_table;`
-- **FK order:** load parent tables before children, or defer constraints within a
-  transaction.
+- **FK order:** parents before children, or defer constraints in transaction.
 
-## Common mistakes (these were in the original script — do not repeat)
+## Common mistakes (were in original script — do not repeat)
 
-- `pscp_out` is `<host> <local> <remote>` — **not** scp-style
-  `pscp_out list.csv "host:/tmp/list.csv"`.
-- `pscp_in <host> <remote>` writes the file into CWD — **never** `> redirect` its
-  output (`pscp_in host /tmp/out.csv > out.csv` yields an empty file).
-- Don't emit spurious `\"` escaping around args or heredoc bodies
-  (e.g. `pssh \"$EC2_HOST\" ...`) — quote normally.
-- Use `\copy` (one line) for local files; `COPY ... TO STDOUT` only when you
-  intend to capture on the client via a shell redirect.
-- **Scope on the server side.** Filter with `WHERE ... BETWEEN` / key joins on
-  the remote DB; never pull the entire table and trim it locally.
+- `pscp_out` = `<host> <local> <remote>` — **not** scp-style `pscp_out list.csv "host:/tmp/list.csv"`.
+- `pscp_in <host> <remote>` writes into CWD — **never** `> redirect` (`pscp_in host /tmp/out.csv > out.csv` -> empty file).
+- No spurious `\"` escaping around args/heredocs (e.g. `pssh \"$EC2_HOST\" ...`) — quote normally.
+- `\copy` (one line) for local files; `COPY ... TO STDOUT` only when capturing on client via shell redirect.
+- **Scope server-side.** `WHERE ... BETWEEN` / key joins on remote DB; never pull whole table, trim locally.
 
 ## Alternatives
 
-- **Whole small table:** dump on the box (compressed), then `pscp_in`:
+- **Whole small table:** dump on box (compressed), then `pscp_in`:
   ```bash
   pssh "$EC2_HOST" "pg_dump -t public.<table> --data-only --column-inserts <db> | zstd -q -o /tmp/t.sql.zst"
   pscp_in "$EC2_HOST" /tmp/t.sql.zst
   zstd -dc t.sql.zst | psql -X "$LOCAL_DB"
   ```
-- **Port-forward (no temp file on the box):** tunnel to the remote DB and run
-  `pg_dump`/`psql` locally against the forwarded port:
+- **Port-forward (no temp file on box):** tunnel to remote DB, run `pg_dump`/`psql` locally on forwarded port:
   ```bash
   pssh "$EC2_HOST" -L 5433:<rds-endpoint>:5432 -N &   # background tunnel
   pg_dump -h localhost -p 5433 -t <table> --data-only <db> | psql -X "$LOCAL_DB"
@@ -127,8 +98,7 @@ Notes on the steps:
 
 ## Safety
 
-- Treat prod (e.g. `reviewr2-release-01`) as **read-only**; prefer `reviewr2-qa-01` /
-  `reviewr2-test-01` (nonprod) when the data allows.
-- **Confirm with the user before writing to the local dev DB.**
-- **You MUST never attempt to write to a remote DB** - it will always fail.
+- Prod (e.g. `reviewr2-release-01`) = **read-only**; prefer `reviewr2-qa-01` / `reviewr2-test-01` (nonprod) when data allows.
+- **Confirm with user before writing to local dev DB.**
+- **You MUST never attempt to write to a remote DB** — always fails.
 - Always clean up remote `/tmp` artifacts (step 6).

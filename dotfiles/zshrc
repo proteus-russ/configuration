@@ -17,7 +17,11 @@ if type brew &>/dev/null
 then
   fpath+=("$(brew --prefix)/share/zsh/site-functions")
   autoload -Uz compinit
-  compinit
+  if [[ -n ~/.zcompdump(#qNmh-24) ]]; then
+    compinit -C
+  else
+    compinit
+  fi
 fi
 
 # Lines configured by zsh-newuser-install

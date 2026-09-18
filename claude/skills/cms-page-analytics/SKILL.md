@@ -12,26 +12,13 @@ description: >-
 
 # CMS page model + request analytics
 
-Two halves, equal weight: the **CMS object model** (how a page is built out of `PageElement`s) and the
-**request analytics** (how every user request is recorded in `requeststatistic` and traced back to
-those page elements).
+Two halves: **CMS object model** (page built from `PageElement`s) + **request analytics** (every request recorded in `requeststatistic`, traced back to page elements).
 
 ## Orientation
 
-**Object model.** A `Layout` is an ordered list of `Box`es (HEADER, MAIN, ASIDE, FOOTER, …). A
-`PageTemplate` references one `Layout`. A `Page` references one `PageTemplate` and inherits the
-template's content per box, overriding it where it wants. The content units are `ContentElement`s
-(text, menus, MIWT/Kotlin UIs, scripted beans — dozens of subtypes, distinguished by the `disc_type`
-discriminator column on a single `contentelement` table). The wiring from a page/template to "these
-content elements live in this box" is the `BeanBoxList`. A `PageElementPath` maps a site URL path to a
-`Page` or `ContentElement` polymorphically.
+**Object model.** `Layout` = ordered list of `Box`es (HEADER, MAIN, ASIDE, FOOTER, …). `PageTemplate` references one `Layout`. `Page` references one `PageTemplate`, inherits template content per box, overrides where wanted. Content units = `ContentElement`s (text, menus, MIWT/Kotlin UIs, scripted beans — dozens of subtypes, `disc_type` discriminator on single `contentelement` table). Page/template -> "these content elements in this box" wiring = `BeanBoxList`. `PageElementPath` maps site URL path to `Page` or `ContentElement` polymorphically.
 
-**Request analytics.** `requeststatistic` holds one row per HTTP request to the origin server. Each row
-records the resolved `page`, the `contentelement` that handled it (when applicable), the URL
-`pagepath`, the principal, timing, HTTP status, user agent, and whether it was a `partial`
-(AJAX/in-page) request. The `page` and `contentelement` columns are plain id references back into the
-CMS model, so you join `requeststatistic` → `page` / `contentelement` to turn raw traffic into
-"which UI did users engage."
+**Request analytics.** `requeststatistic` = one row per HTTP request to origin server. Row records resolved `page`, handling `contentelement` (when applicable), URL `pagepath`, principal, timing, HTTP status, user agent, `partial` flag (AJAX/in-page). `page` + `contentelement` = plain id refs into CMS model -> join `requeststatistic` → `page` / `contentelement` to turn traffic into "which UI did users engage."
 
 ## Object-model spine + request links (text ER)
 
@@ -51,43 +38,34 @@ requeststatistic.site            ──► site.site_id
 requeststatistic.userprincipal   ──► principal id
 ```
 
-Note: `requeststatistic` links to **Page and ContentElement only — never Box**. Boxes/Layout are
-structural context you reach through the beanboxlist joins, not something recorded per request.
+`requeststatistic` links to **Page and ContentElement only — never Box**. Boxes/Layout = structural context via beanboxlist joins, not recorded per request.
 
-## Two rules that will bite you
+## Two rules that bite
 
-1. **All Postgres columns are lowercase.** Proteus hbm.xml mappings use camelCase (`requestTime`,
-   `contentElement`, `userPrincipal`) but the real columns are `requesttime`, `contentelement`,
-   `userprincipal`. Write SQL in lowercase or it fails.
-2. **Always bound analytics queries by `requesttime`.** The table is huge (tens of millions of rows in
-   production, growing constantly, archived periodically) — an unbounded scan is expensive, and old
-   rows may have been archived out anyway. Every analytic query should carry a `requesttime` filter.
+1. **All Postgres columns lowercase.** hbm.xml uses camelCase (`requestTime`, `contentElement`, `userPrincipal`) but real columns are `requesttime`, `contentelement`, `userprincipal`. SQL lowercase or fail.
+2. **Always bound analytics queries by `requesttime`.** Table huge (tens of millions rows in prod, growing, archived periodically) — unbounded scan expensive; old rows may be archived out. Every analytic query carries `requesttime` filter.
 
 ## PII/PHI gate — confirm before pulling production data
 
 `requeststatistic` rows describe real user activity (`userprincipal`, user
-agent, the exact `pagepath`), and joins back into the CMS model can surface
-more. **Before running any query that reads production data — or whose results
-include personal data — you MUST stop and ask the user to explicitly confirm it
+agent, exact `pagepath`); joins into the CMS model can surface more. **Before
+running any query that reads production data — or whose results include
+personal data — you MUST stop and ask the user to explicitly confirm it
 contains no PII or PHI that is meant to be scrubbed before leaving production.**
 Get that confirmation **every time**; never assume.
 
-This applies to every product. **Engage** is the sharp example: you must use its
-**sanitized snapshots** and treat Engage production data as off-limits — do
-**not** pull it ever - this must not be overridden. Engage flags PHI-protected
-records via the `phisafeguards` column in `app.company`, which is exactly the
-kind of data that must not leave production unscrubbed.
+Applies to every product. **Engage** is the sharp example: use its **sanitized
+snapshots**; Engage production data is off-limits — do **not** pull it, ever;
+this must not be overridden. Engage flags PHI-protected records via the
+`phisafeguards` column in `app.company` — exactly the kind of data that must
+not leave production unscrubbed.
 
 ## Where to go next
 
 | You want to… | Go to |
 | --- | --- |
-| Run an analytics query (top pages, top UIs, errors, timing, by user) | `references/query-cookbook.md` |
-| Understand `requeststatistic` columns, how rows get written, join caveats | `references/requeststatistic.md` |
-| Understand the CMS object model / table+column mapping / class hierarchy | `references/page-element-model.md` |
+| Run analytics query (top pages, top UIs, errors, timing, by user) | `references/query-cookbook.md` |
+| `requeststatistic` columns, how rows written, join caveats | `references/requeststatistic.md` |
+| CMS object model / table+column mapping / class hierarchy | `references/page-element-model.md` |
 
-When asked an analytics question, prefer adapting a cookbook query — they are already lowercase,
-`requesttime`-bounded, and join to readable labels. Run them via the `postgres` MCP. The headline field
-for "which UI" is `contentelement.componentidentifier` (names the exact bean/Kotlin class) with
-`contentelement.name` as the human label; filter `partial = true` to isolate in-page interactions from
-full page loads.
+Analytics question -> adapt cookbook query (already lowercase, `requesttime`-bounded, joins to readable labels). Run via `postgres` MCP. Headline "which UI" field = `contentelement.componentidentifier` (exact bean/Kotlin class); `contentelement.name` = human label; `partial = true` isolates in-page interactions from full page loads.

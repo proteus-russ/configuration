@@ -8,6 +8,7 @@ Compression yes
 ForwardX11Trusted yes
 ForwardAgent yes
 HashKnownHosts no
+ServerAliveInterval 60
 
 host github.com
   ControlMaster no

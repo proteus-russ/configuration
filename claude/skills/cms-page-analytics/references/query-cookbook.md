@@ -1,14 +1,11 @@
 # Analytics query cookbook
 
-Ready-to-run PostgreSQL for `requeststatistic`. Run via the `postgres` MCP. Every query is lowercase
-and bounded by `requesttime` — keep it that way (the table has tens of millions of rows and is archived
-periodically, so unbounded scans are slow and old rows may be gone). Adjust the interval and `LIMIT` to
-taste. Use `LEFT JOIN` to `page`/`contentelement` (no enforced FK — see `requeststatistic.md`).
+Ready-to-run PostgreSQL for `requeststatistic`. Run via `postgres` MCP. Every query lowercase + bounded by `requesttime` — keep it that way (tens of millions rows, archived periodically; unbounded scans slow, old rows gone). Adjust interval/`LIMIT` to taste. `LEFT JOIN` to `page`/`contentelement` (no enforced FK — see `requeststatistic.md`).
 
-Filter notes used below:
-- `status = 200` to count successful views; drop it to include redirects/errors.
+Filter notes:
+- `status = 200` = successful views; drop to include redirects/errors.
 - `partial = false` ≈ full page loads; `partial = true` ≈ in-page (AJAX/MIWT) interactions.
-- `userprincipal IS NULL` = anonymous traffic.
+- `userprincipal IS NULL` = anonymous.
 
 ## Top pages by views (readable path)
 
@@ -25,13 +22,11 @@ ORDER BY views DESC
 LIMIT 30;
 ```
 
-`pagepath` (on the stat row) is an alternative grouping key that also works when no page resolved —
-useful for static assets, redirects, and 404s.
+`pagepath` (on stat row) = alternative grouping key, works when no page resolved — static assets, redirects, 404s.
 
 ## Top components / UIs interacted with
 
-The headline "which part of the page" query. `componentidentifier` names the exact bean/Kotlin class;
-`name` is the human label.
+Headline "which part of page" query. `componentidentifier` = exact bean/Kotlin class; `name` = human label.
 
 ```sql
 SELECT ce.name                AS component,
@@ -49,8 +44,7 @@ LIMIT 30;
 
 ## Engagement by MIWT / Kotlin UI class
 
-When you care about a specific UI implementation (e.g. a Kotlin component), group by
-`componentidentifier` and pattern-match the class.
+Specific UI impl (e.g. Kotlin component): group by `componentidentifier`, pattern-match class.
 
 ```sql
 SELECT ce.componentidentifier, count(*) AS hits
@@ -121,9 +115,7 @@ GROUP BY who;
 
 ## Traffic by hostname
 
-`requeststatistic.hostname` is already the readable host string (a `CmsHostname.name`, e.g.
-`my.reviewr.com`), so group by it directly. One site can answer to many hostnames (vanity domains,
-internal VPC names, IPs), so this is finer-grained than "by site".
+`requeststatistic.hostname` = readable host string (`CmsHostname.name`, e.g. `my.reviewr.com`) — group directly. One site can answer to many hostnames (vanity domains, internal VPC names, IPs) -> finer-grained than "by site".
 
 ```sql
 SELECT r.hostname, count(*) AS requests, count(DISTINCT r.sessionid) AS sessions
@@ -133,10 +125,7 @@ GROUP BY r.hostname
 ORDER BY requests DESC;
 ```
 
-To roll up by site instead, join `site` and resolve its primary domain string:
-`requeststatistic.site` → `site.site_id`, then `site.domain` → `authenticationdomain.id`
-(readable string is `authenticationdomain.domainname`). Note `site.domain` is an `AuthenticationDomain`
-id, **not** a hostname.
+Roll up by site: join `site`, resolve primary domain string: `requeststatistic.site` → `site.site_id`, then `site.domain` → `authenticationdomain.id` (readable string `authenticationdomain.domainname`). `site.domain` = `AuthenticationDomain` id, **not** hostname.
 
 ```sql
 SELECT ad.domainname AS site_domain, count(*) AS requests
