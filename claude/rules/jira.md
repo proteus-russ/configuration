@@ -17,3 +17,16 @@
   - Tables convert, but keep them small; long rows read badly in the Jira renderer. Prefer bullet lists.
   - After creating or editing, read the returned `description` back — it is the stored source, so literal
     `h1.` or a mangled footer is visible there immediately. Fix with `editJiraIssue` rather than leaving it.
+
+## Writing for a mixed audience
+
+Bugs and Stories are read by developers and by project managers. Write for both.
+
+- Open with what the user sees and who is affected. Leave the code out of that opening.
+- In each section, write the plain-English version first. Put code names, file paths and
+  commit ids in a separate paragraph that starts with "For developers:".
+- Say how sure you are. If the cause is a guess, name it as one, say what evidence would
+  confirm it, and name the other suspect.
+- Add a "How to check the fix" section a tester can follow without reading code.
+- Put raw logs and stack traces last, in a code block, and don't edit them.
+- Internal Tasks for engineering only can skip the plain-English layer.
