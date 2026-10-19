@@ -41,6 +41,10 @@ Style source: Russ's commits, PRs and Jira tickets from 2025 and earlier, plus h
   bullet inventory of files touched. Fenced code blocks are fine for examples.
 - A coordination note after the ticket is normal: rollout timing, snapshot plans, which downstream app Russ will fix,
   a direct question to a reviewer. Include one only when the facts are known. Never invent it.
+- **Never hard-wrap a PR description, review comment or issue comment.** GitHub renders every newline as a line break,
+  so a body wrapped at 72 or 120 columns shows as ragged fragments. One paragraph per line, blank line between
+  paragraphs. Only commit messages wrap (at 72). Keep a draft file for review unwrapped too, so what Russ reads is
+  what gets posted.
 
 ## Jira
 
